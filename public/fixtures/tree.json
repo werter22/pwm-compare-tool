@@ -1,0 +1,17 @@
+{
+  "domains": [
+    {
+      "id": "d1",
+      "name": "Sicherheit & Compliance",
+      "criteria": [
+        {
+          "id": "c1",
+          "name": "Sicherheitsarchitektur",
+          "subcriteria": [
+            { "id": "s1", "name": "Zero Knowledge", "short_desc": "..." }
+          ]
+        }
+      ]
+    }
+  ]
+}

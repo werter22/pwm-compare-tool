@@ -1,0 +1,16 @@
+[
+  {
+    "product_id": "p1",
+    "subcriterion_id": "s1",
+    "score": 2,
+    "audit_comment": "Kurz begruendet mit Verweis auf Evidenz.",
+    "evidenz_links": [{ "label": "Krypto-Whitepaper", "url": "https://example.com" }]
+  },
+  {
+    "product_id": "p2",
+    "subcriterion_id": "s1",
+    "score": 1,
+    "audit_comment": "Funktion vorhanden, Nachweise eher oberflaechlich.",
+    "evidenz_links": [{ "label": "Dokumentation", "url": "https://example.com" }]
+  }
+]
