@@ -5,10 +5,222 @@
       "name": "Sicherheit & Compliance",
       "criteria": [
         {
-          "id": "c1",
-          "name": "Sicherheitsarchitektur",
+          "id": "c_d1_3_2",
+          "name": "Sicherheitsreife des Anbieters",
           "subcriteria": [
-            { "id": "s1", "name": "Zero Knowledge", "short_desc": "..." }
+            {
+              "id": "s_3_2_1",
+              "name": "Secure SDLC",
+              "short_desc": "Nachweise einfordern (Policies, Threat-Modeling, SAST/DAST, Reviews, SLAs). 2. Mapping gegen NIST SSDF/OWASP SAMM."
+            },
+            {
+              "id": "s_3_2_2",
+              "name": "Bug-Bounty/Vulnerability Disclosure Program (VDP)",
+              "short_desc": "Prüfen: öffentliche VDP-Seite/security.txt, Scope/Regeln, Reaktions-/Fix-SLAs, Disclosure-Historie/Advisories; ggf. aktives Bug-Bounty."
+            },
+            {
+              "id": "s_3_2_3",
+              "name": "SBOM (Software Bill of Materials)",
+              "short_desc": "Anfordern/prüfen: SBOM pro Release (SPDX/CycloneDX), Vollständigkeit (transitive Dependencies), Aktualität, Bereitstellung, ideal signiert."
+            },
+            {
+              "id": "s_3_2_4",
+              "name": "Dependency-/ Vulnerability-Management",
+              "short_desc": "Prüfen: inventarisierte Dependencies, SCA-Tooling, CVE-Monitoring, klare Patch-SLAs & Release-Notes/Advisories."
+            },
+            {
+              "id": "s_3_2_5",
+              "name": "Secrets in CI/CD",
+              "short_desc": "Prüfen: zentraler Secret-Vault, kein Klartext (Code/Configs), Log-Maskierung, Least-Privilege, Rotation/kurzlebige Tokens, Härtung/Policies."
+            }
+          ]
+        },
+        {
+          "id": "c_d1_3_3",
+          "name": "Compliance & Nachweise",
+          "subcriteria": [
+            {
+              "id": "s_3_3_1",
+              "name": "ISO/IEC 27001",
+              "short_desc": "Zertifikat einfordern (Akkreditierung, Scope/SoA, Gültigkeit). 2. Scope prüfen (Cloud-Betrieb/Produkt-Teams?). 3. Ergänzende Normen (27017/27018) prüfen."
+            },
+            {
+              "id": "s_3_3_2",
+              "name": "SOC 2 Typ II",
+              "short_desc": "SOC 2 Typ II-Report einsehen (Prüfzeitraum, Kriterien, Scope). 2. Findings/Management-Responses, jährliche Erneuerung prüfen. 3. Mapping (Security, Availability, Confidentiality)."
+            },
+            {
+              "id": "s_3_3_3",
+              "name": "Penetrationstests",
+              "short_desc": "Externe Reports anfordern (Scope/Methodik, Kritikalitäten, Retest-Nachweise). 2. Remediation-SLAs & Release-Notes prüfen (Zeit bis Fix). 3. Trigger für ausserplanmässige Tests."
+            },
+            {
+              "id": "s_3_3_4",
+              "name": "Krypto-Whitepaper",
+              "short_desc": "Aktuelles Whitepaper einfordern (E2E-Begründung, KDF, AEAD, Key-Lifecycle). 2. Standard-Bezüge (NIST/RFC) & externe Audits verifizieren. 3. Konsistenz mit Produktfunktionen."
+            },
+            {
+              "id": "s_3_3_5",
+              "name": "Branchenzertifikate (C5, CSPN, Common Criteria, ggf. FIPS)",
+              "short_desc": "Zertifikate/Testate anfordern; Register prüfen (C5/CC/CSPN). 2. Scope/Version/Rezertifizierung verifizieren. 3. Gegenanerkennungen (CSPN BSZ) prüfen."
+            }
+          ]
+        },
+        {
+          "id": "c_d1_3_4",
+          "name": "Risiko- & Vorfallhistorie",
+          "subcriteria": [
+            {
+              "id": "s_3_4_1",
+              "name": "Frühere Sicherheitsvorfälle / Breaches",
+              "short_desc": "Öffentliche Advisories/Reports, Medien, CVE-Daten, Forensik-Berichte prüfen. 2. Schweregrad, Muster, Zeit seit Vorfall, Gegenmassnahmen bewerten."
+            },
+            {
+              "id": "s_3_4_2",
+              "name": "Reaktionsfähigkeit (Incident Response)",
+              "short_desc": "IR-Plan/Team, Playbooks, Übungsnachweise. 2. Zeitachsen früherer Incidents (Entdeckung -> Fix). 3. Patch-SLAs/Retests."
+            },
+            {
+              "id": "s_3_4_3",
+              "name": "Lessons Learned / Kontinuierliche Verbesserung",
+              "short_desc": "Beispiele After-Action-Reports + umgesetzte Massnahmen. 2. Policy/Architektur-Updates, Release-Notes, Audit-Findings geschlossen."
+            },
+            {
+              "id": "s_3_4_4",
+              "name": "Kommunikation & Offenheit bei Vorfällen",
+              "short_desc": "Historische Timeline/Statements (Wer informierte wann/wie?). 2. Policies zur Incident-Kommunikation; Advisory-Portal. 3. Regulatorische Meldungen (72h) erfüllt."
+            }
+          ]
+        },
+        {
+          "id": "c_d1_3_5",
+          "name": "Dark-Web Präsenz",
+          "subcriteria": [
+            {
+              "id": "s_3_5_1",
+              "name": "Dark-Web-Leaks & Funde",
+              "short_desc": "Threat-Intel-Recherche (Anbietername, Domainmuster, Vault-Signaturen). 2. Kreuzcheck mit Advisories. 3. Stichproben (Daten plausibilisieren)."
+            },
+            {
+              "id": "s_3_5_2",
+              "name": "Advisories & Incident-Timeline (Transparenz)",
+              "short_desc": "Trust-Center/Advisory-Portal prüfen (Vollständigkeit, Detailgrad, Root Cause, IOC). 2. Zeitvergleich (Entdeckung -> Meldung -> Fix). 3. Konsistenz vs. externe Berichte."
+            },
+            {
+              "id": "s_3_5_3",
+              "name": "Threat-Intel/Dark-Web-Monitoring & Customer-Alerting",
+              "short_desc": "Nachweise für TI-Feeds/Provider, Playbooks. 2. Customer-Alerting-Beispiele (Mails, Portal-Hinweise, erzwungene Resets). 3. Feature-Test (Leaked-Credential-Check, Admin-Reporting)."
+            }
+          ]
+        },
+        {
+          "id": "c_d1_3_6",
+          "name": "Open-Source",
+          "subcriteria": [
+            {
+              "id": "s_3_6_1",
+              "name": "Open-Source",
+              "short_desc": "Repos prüfen (Server/Clients offen, Lizenz). 2. Build-Integrität (Signierte Releases, reproducible Builds). 3. Release-Prozess (Versionierung, Security-Notes). 4. Community-Health."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "d2",
+      "name": "Datenhoheit, Lieferkette & Governance",
+      "criteria": [
+        {
+          "id": "c_d2_3_2",
+          "name": "Datenresidenz / Jurisdiktion",
+          "subcriteria": [
+            {
+              "id": "s_3_2_1",
+              "name": "Dokumentation / Subprozessoren",
+              "short_desc": "DPA + Subprozessorliste + Speicherorte anfordern"
+            },
+            {
+              "id": "s_3_2_2",
+              "name": "SBOM-Transparenz",
+              "short_desc": "SBOM oder Komponentenliste prüfen"
+            },
+            {
+              "id": "s_3_2_3",
+              "name": "Rechts- & Hostingstruktur",
+              "short_desc": "Unternehmenssitz, Hostingstandorte & CLOUDACT-Risiko prüfen"
+            },
+            {
+              "id": "s_3_2_4",
+              "name": "Eigentümerstruktur",
+              "short_desc": "Eigentümer- & Managementstruktur prüfen"
+            },
+            {
+              "id": "s_3_2_5",
+              "name": "Kostenbestandteile",
+              "short_desc": "Preislisten, Feature-Kosten & Consulting erfassen"
+            },
+            {
+              "id": "s_3_2_6",
+              "name": "Exportfähigkeit",
+              "short_desc": "Export von Secrets & Metadaten testen"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "d3",
+      "name": "Produkt, Betrieb & Adoption",
+      "criteria": [
+        {
+          "id": "c_d3_4_3",
+          "name": "Benutzbarkeit & Adoption",
+          "subcriteria": [
+            {
+              "id": "s_4_3_1",
+              "name": "UX-Heuristik-Evaluation",
+              "short_desc": "Anwendung von Nielsen's 10 Usability-Heuristiken zur Bewertung der Benutzeroberfläche"
+            },
+            {
+              "id": "s_4_3_2",
+              "name": "SSO-Kompatibilitätstest",
+              "short_desc": "Prüfung der Unterstützung von SAML 2.0 und OIDC mit gängigen Identity Providern (Okta, Microsoft Entra ID, Google Workspace)"
+            },
+            {
+              "id": "s_4_3_3",
+              "name": "IAM/Directory-Integration",
+              "short_desc": "Test der Anbindung an AD, LDAP, Azure AD"
+            },
+            {
+              "id": "s_4_3_4",
+              "name": "Secrets-Management-Test",
+              "short_desc": "Prüfung der Speicherung von SSH-Keys, API-Keys, Zertifikaten, Datenbank-Credentials​"
+            },
+            {
+              "id": "s_4_3_5",
+              "name": "SLA-Dokumentation",
+              "short_desc": "Analyse der vertraglich garantierten Verfügbarkeit"
+            },
+            {
+              "id": "s_4_3_6",
+              "name": "Support-SLA-Analyse",
+              "short_desc": "Die vertraglich garantierten Response- und Resolution-Zeiten nach Severity werden analysiert. Standard-SLA-Definitionen umfassen typischerweise: • P1 (Kritisch): System down, Gesch…"
+            },
+            {
+              "id": "s_4_3_7",
+              "name": "Schulungsmaterial-Analyse",
+              "short_desc": "Qualität und Umfang von Trainingsvideos, Webinaren, Handbüchern"
+            },
+            {
+              "id": "s_4_3_8",
+              "name": "Roadmap-Analyse",
+              "short_desc": "Prüfung der öffentlichen Roadmap auf Detailgrad und Zeitrahmen"
+            },
+            {
+              "id": "s_4_3_9",
+              "name": "Financial Reports",
+              "short_desc": "Analyse öffentlich verfügbarer Finanzdaten (bei börsennotierten oder Private-Equity-backed Companies)"
+            }
           ]
         }
       ]

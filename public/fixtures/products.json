@@ -1,4 +1,47 @@
 [
-  { "id": "p1", "name": "Tool A", "description": "Kurzbeschreibung" },
-  { "id": "p2", "name": "Tool B", "description": "Kurzbeschreibung" }
+  {
+    "id": "google",
+    "name": "Google",
+    "description": ""
+  },
+  {
+    "id": "edge",
+    "name": "Edge",
+    "description": ""
+  },
+  {
+    "id": "firefox",
+    "name": "Firefox",
+    "description": ""
+  },
+  {
+    "id": "bitwarden",
+    "name": "Bitwarden",
+    "description": ""
+  },
+  {
+    "id": "dashlane",
+    "name": "Dashlane",
+    "description": ""
+  },
+  {
+    "id": "1password",
+    "name": "1Password",
+    "description": ""
+  },
+  {
+    "id": "keepassxc",
+    "name": "KeePassXC",
+    "description": ""
+  },
+  {
+    "id": "roboform",
+    "name": "RoboForm",
+    "description": ""
+  },
+  {
+    "id": "bitdefender",
+    "name": "Bitdefender",
+    "description": ""
+  }
 ]
