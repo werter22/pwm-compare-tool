@@ -1,4 +1,4 @@
-import type { Preference, Tree, RelevanceLevel } from "../domain/types";
+import type { Preference, Tree,} from "../domain/types";
 import type { WizardAnswers } from "./questions";
 
 type Patch = Partial<Pick<Preference, "relevance_level" | "weight" | "is_ko" | "ko_threshold">>;
@@ -50,15 +50,6 @@ function applyPatch(prefs: Preference[], ids: string[], patch: Patch): Preferenc
   return prefs.map(p => (idSet.has(p.subcriterion_id) ? { ...p, ...patch } : p));
 }
 
-function setRelevanceAndWeight(level: RelevanceLevel, weight: number, isKo = false): Patch {
-  return {
-    relevance_level: level,
-    weight,
-    is_ko: isKo,
-    ko_threshold: isKo ? KO_THRESHOLD_DEFAULT : undefined
-  };
-}
-
 function applyDomainMultiplier(prefs: Preference[], ids: string[], factor: number): Preference[] {
   const idSet = new Set(ids);
   return prefs.map(p => {
@@ -81,7 +72,6 @@ export function applyWizardAnswers(args: {
   // 1) Domänen-Grobgewichtung via Multiplikatoren
   const securityIds = findAllSubIdsByDomain(tree, "d1");
   const governanceIds = findAllSubIdsByDomain(tree, "d2");
-  const productIds = findAllSubIdsByDomain(tree, "d3");
 
   // Sensitivity
   if (answers.sensitivity === "normal") {
