@@ -1,49 +1,89 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
-import type { Product, Preference, Score, Tree, ScoreValue } from "../../domain/types";
+import { useNavigate } from "react-router-dom";
+
+import type { Preference, Product, Score, Tree } from "../../domain/types";
 import { getProducts, getScores, getTree } from "../../api/repo";
 import { ensurePreferencesForTree, loadPreferences, savePreferences } from "../../state/preferences";
-import { loadCompareSelection } from "../../state/compare";
-import { makeScoreLookup, getScoreValueOrZero } from "../../engine/lookup";
+import { loadCompareSelection, toggleCompareSelection } from "../../state/compare";
+
+import Container from "../components/Container";
+import PageHeader from "../components/PageHeader";
+import Card from "../components/Card";
+import Button from "../components/Button";
+import Badge from "../components/Badge";
 import ScorePill from "../components/ScorePill";
-import EvidenceLinks from "../components/EvidenceLinks";
+import { domainTheme } from "../styles/domainTheme";
 
-function useQueryParam(name: string) {
-  const loc = useLocation();
-  return useMemo(() => new URLSearchParams(loc.search).get(name), [loc.search, name]);
+function getShortDesc(x: any): string | undefined {
+  return (x?.short_desc ?? x?.shortDesc ?? undefined) as any;
 }
 
-function prefMapFrom(prefs: Preference[]) {
-  return new Map(prefs.map((p) => [p.subcriterion_id, p]));
+function isDifferent(values: Array<0 | 1 | 2>) {
+  if (values.length <= 1) return false;
+  return values.some((v) => v !== values[0]);
 }
 
-function isKOViolation(pref: Preference | undefined, scoreVal: ScoreValue) {
-  if (!pref) return false;
-  if (pref.relevance_level === "nicht_relevant") return false;
-  if (!pref.is_ko) return false;
-  return scoreVal < pref.ko_threshold;
+/** Kleine, ruhige Progressbar (für Kriterien-Übersicht) */
+function MiniProgress({
+  valuePct,
+  label,
+}: {
+  valuePct: number;
+  label?: string;
+}) {
+  const v = Math.max(0, Math.min(100, valuePct));
+
+  // Heat-Meter: 0% = rot (0°), 100% = grün (120°)
+  const hue = (v / 100) * 120;
+
+  // Etwas "app-tauglicher": nicht zu neon, gute Lesbarkeit
+  const fill = `hsl(${hue} 70% 42%)`;
+
+  return (
+    <div style={{ display: "grid", gap: 6, justifyItems: "center" }}>
+      <div
+        style={{
+          width: "100%",
+          height: 10,
+          background: "var(--muted-2, rgba(0,0,0,0.10))",
+          borderRadius: "var(--r-pill)",
+          border: "1px solid var(--border)",
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            width: `${v}%`,
+            height: "100%",
+            background: fill,
+            borderRadius: "var(--r-pill)",
+            transition: "width 180ms ease, background-color 180ms ease",
+          }}
+        />
+      </div>
+
+      {label ? (
+        <div style={{ fontSize: 12, fontWeight: 800, color: "var(--text-muted)" }}>
+          {label}
+        </div>
+      ) : null}
+    </div>
+  );
 }
+
+type CriterionProgress = { pct: number; sum: number; max: number };
 
 export default function Compare() {
-  const pParam = useQueryParam("p") ?? "";
-
-  // 1) IDs aus URL, 2) fallback localStorage, 3) max 3
-  const selectedIds = useMemo(() => {
-    const fromUrl = pParam
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-
-    const base = fromUrl.length > 0 ? fromUrl : loadCompareSelection();
-    return base.slice(0, 3);
-  }, [pParam]);
+  const nav = useNavigate();
 
   const [products, setProducts] = useState<Product[]>([]);
   const [tree, setTree] = useState<Tree | null>(null);
   const [scores, setScores] = useState<Score[]>([]);
   const [prefs, setPrefs] = useState<Preference[]>([]);
-  const [onlyDiffs, setOnlyDiffs] = useState(true);
-  const [onlyMustOrKO, setOnlyMustOrKO] = useState(false);
+
+  const [onlyDiffs, setOnlyDiffs] = useState(false);
+  const [compact, setCompact] = useState(true); // default Kompakt = true
+  const [compareIds, setCompareIds] = useState<string[]>(loadCompareSelection());
 
   useEffect(() => {
     async function load() {
@@ -60,249 +100,381 @@ export default function Compare() {
     load().catch(console.error);
   }, []);
 
-  const selectedProducts = useMemo(() => {
-    return products.filter((p) => selectedIds.includes(p.id));
-  }, [products, selectedIds]);
+  const compareProducts = useMemo(() => {
+    const map = new Map(products.map((p) => [p.id, p]));
+    return compareIds.map((id) => map.get(id)).filter(Boolean) as Product[];
+  }, [compareIds, products]);
 
-  const scoreLookup = useMemo(() => makeScoreLookup(scores), [scores]);
-  const prefMap = useMemo(() => prefMapFrom(prefs), [prefs]);
+  const scoreByProductAndSub = useMemo(() => {
+    const m = new Map<string, Map<string, Score>>();
+    for (const pid of compareIds) m.set(pid, new Map());
 
-  // Rows: flach für Tabelle, aber mit Domain/Kriterium-Labels
-  const rows = useMemo(() => {
-    if (!tree) return [];
-
-    const out: Array<{
-      domainName: string;
-      criterionName: string;
-      subId: string;
-      subName: string;
-      shortDesc?: string;
-      pref?: Preference;
-      // pro Produkt eine Zelle
-      cells: Array<{
-        productId: string;
-        scoreVal: ScoreValue;
-        scoreObj?: Score;
-        isKoFail: boolean;
-      }>;
-      isDifferent: boolean;
-    }> = [];
-
-    for (const d of tree.domains) {
-      for (const c of d.criteria) {
-        for (const s of c.subcriteria) {
-          const pref = prefMap.get(s.id);
-
-          // optional: NA komplett ausblenden im Compare
-          if (pref?.relevance_level === "nicht_relevant") continue;
-
-          const cells = selectedProducts.map((p) => {
-            const scoreObj = scoreLookup.get(p.id)?.get(s.id);
-            const scoreVal = getScoreValueOrZero(scoreObj);
-            return {
-              productId: p.id,
-              scoreVal,
-              scoreObj,
-              isKoFail: isKOViolation(pref, scoreVal)
-            };
-          });
-
-          const first = cells[0]?.scoreVal ?? 0;
-          const isDifferent = cells.some((x) => x.scoreVal !== first);
-
-          out.push({
-            domainName: d.name,
-            criterionName: c.name,
-            subId: s.id,
-            subName: s.name,
-            shortDesc: s.short_desc,
-            pref,
-            cells,
-            isDifferent
-          });
-        }
-      }
+    for (const s of scores) {
+      if (!compareIds.includes(s.product_id)) continue;
+      if (!m.has(s.product_id)) m.set(s.product_id, new Map());
+      m.get(s.product_id)!.set(s.subcriterion_id, s);
     }
-    return out;
-  }, [tree, selectedProducts, scoreLookup, prefMap]);
+    return m;
+  }, [scores, compareIds]);
 
-  const filtered = useMemo(() => {
-    return rows.filter((r) => {
-      if (onlyDiffs && !r.isDifferent) return false;
+  const prefMap = useMemo(() => new Map(prefs.map((p) => [p.subcriterion_id, p])), [prefs]);
 
-      if (onlyMustOrKO) {
-        const rel = r.pref?.relevance_level;
-        const isKo = r.pref?.is_ko ?? false;
-        if (!(rel === "muss" || isKo)) return false;
-      }
-
-      return true;
-    });
-  }, [rows, onlyDiffs, onlyMustOrKO]);
+  const cols = compareProducts.length;
 
   if (!tree) {
     return (
-      <main style={{ padding: 24 }}>
-        <p>Lade Daten…</p>
-      </main>
+      <Container>
+        <div style={{ padding: "var(--s-6) 0" }}>
+          <PageHeader title="Vergleich" subtitle="Lade Daten…" />
+        </div>
+      </Container>
     );
   }
 
-  if (selectedProducts.length < 2) {
+  if (cols < 2) {
     return (
-      <main style={{ padding: 24, maxWidth: 1100, margin: "0 auto" }}>
-        <h1>Vergleich</h1>
-        <p>Bitte wähle mindestens 2 Produkte aus (im Ranking „Vergleichen“ klicken).</p>
-        <p style={{ marginTop: 8 }}>
-          Beispiel: <code>/#/compare?p=p1,p2</code>
-        </p>
-        <p>
-          <Link to="/ranking">← Ranking</Link>
-        </p>
-      </main>
+      <Container>
+        <div style={{ padding: "var(--s-6) 0" }}>
+          <PageHeader
+            title="Vergleich"
+            subtitle="Wähle mindestens zwei Produkte im Ranking aus, um sie hier nebeneinander zu vergleichen."
+            right={
+              <Button variant="secondary" onClick={() => nav("/ranking")}>
+                Zum Ranking
+              </Button>
+            }
+          />
+          <div style={{ marginTop: "var(--s-5)" }}>
+            <Card>
+              <p style={{ color: "var(--text-muted)" }}>
+                Tipp: Im Ranking auf <strong>Vergleichen</strong> klicken. Danach erscheint „Vergleich öffnen“.
+              </p>
+            </Card>
+          </div>
+        </div>
+      </Container>
     );
+  }
+
+  const gridTemplate = `minmax(280px, 1.25fr) repeat(${cols}, minmax(260px, 1fr))`;
+
+  // Kriterium-Progress pro Produkt
+  function criterionProgress(c: any, productId: string): CriterionProgress {
+    const subs = c.subcriteria ?? [];
+    const n = subs.length;
+    const max = 2 * n;
+    const sum = subs.reduce((acc: number, sc: any) => {
+      const s = scoreByProductAndSub.get(productId)?.get(sc.id)?.score ?? 0;
+      return acc + (s as number);
+    }, 0);
+    const pct = max > 0 ? (sum / max) * 100 : 0;
+    return { pct, sum, max };
+  }
+
+  // ob ein Kriterium (bei onlyDiffs) überhaupt relevant sichtbar bleibt
+  function criterionHasAnyDiff(c: any): boolean {
+    const subs = c.subcriteria ?? [];
+    for (const sc of subs) {
+      const values = compareProducts.map((p) => {
+        const s = scoreByProductAndSub.get(p.id)?.get(sc.id)?.score ?? 0;
+        return s as 0 | 1 | 2;
+      });
+      if (isDifferent(values)) return true;
+    }
+    return false;
   }
 
   return (
-    <main style={{ padding: 24, maxWidth: 1200, margin: "0 auto" }}>
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 16, flexWrap: "wrap" }}>
-        <div>
-          <h1 style={{ margin: 0 }}>Vergleich</h1>
-          <p style={{ marginTop: 8, color: "#555" }}>
-            Standard: nur Unterschiede. KO-Verstoss wird pro Zelle markiert.
-          </p>
-        </div>
-        <Link to="/ranking">← Ranking</Link>
-      </header>
+    <Container>
+      <div style={{ padding: "var(--s-6) 0" }}>
+        <PageHeader
+          title="Vergleich"
+          subtitle="Unterkriterien nebeneinander. „Nur Unterschiede“ hilft, schnell die relevanten Differenzen zu sehen."
+          right={
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <Button variant="secondary" onClick={() => nav("/ranking")}>
+                Zurück
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  // Auswahl leeren (localStorage via toggleCompareSelection)
+                  compareProducts.forEach((p) => toggleCompareSelection(p.id));
+                  setCompareIds([]);
+                }}
+              >
+                Auswahl leeren
+              </Button>
+            </div>
+          }
+        />
 
-      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginTop: 12 }}>
-        <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <input type="checkbox" checked={onlyDiffs} onChange={(e) => setOnlyDiffs(e.target.checked)} />
-          Nur Unterschiede
-        </label>
+        {/* Table */}
+        <div style={{ marginTop: "var(--s-5)" }}>
+          <div
+            style={{
+              border: "1px solid var(--border)",
+              borderRadius: "var(--r-md)",
+              overflow: "hidden",
+              boxShadow: "var(--shadow-sm)",
+              background: "var(--surface)",
+            }}
+          >
+            {/* Sticky Header */}
+            <div
+              style={{
+                position: "sticky",
+                zIndex: 10,
+                background: "rgba(255, 255, 255, 0.79)",
+                backdropFilter: "blur(8px)",
+                borderBottom: "1px solid var(--border)",
+              }}
+            >
+              <div style={{ display: "grid", gridTemplateColumns: gridTemplate }}>
+                {/* Left header cell with controls */}
+                <div style={{ padding: "12px 14px" }}>
 
-        <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <input type="checkbox" checked={onlyMustOrKO} onChange={(e) => setOnlyMustOrKO(e.target.checked)} />
-          Nur Muss/KO
-        </label>
-      </div>
+                  <div style={{ marginTop: 2, display: "grid", gap: 6 }}>
+                    <label style={{ display: "flex", gap: 8, alignItems: "center", color: "var(--text-muted)", fontSize: 13 }}>
+                      <input type="checkbox" checked={onlyDiffs} onChange={(e) => setOnlyDiffs(e.target.checked)} />
+                      Nur Unterschiede
+                    </label>
 
-      <div style={{ marginTop: 16, overflowX: "auto", border: "1px solid #ddd", borderRadius: 12 }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 950 }}>
-          <thead>
-            <tr style={{ background: "#fafafa" }}>
-              <th style={{ textAlign: "left", padding: 12, borderBottom: "1px solid #ddd", width: 420 }}>
-                Unterkriterium
-              </th>
-
-              {selectedProducts.map((p) => (
-                <th key={p.id} style={{ textAlign: "left", padding: 12, borderBottom: "1px solid #ddd" }}>
-                  {p.name}
-                  <div style={{ fontSize: 12, color: "#777", marginTop: 2 }}>
-                    <Link to={`/product/${p.id}`}>Details</Link>
+                    <label style={{ display: "flex", gap: 8, alignItems: "center", color: "var(--text-muted)", fontSize: 13 }}>
+                      <input type="checkbox" checked={compact} onChange={(e) => setCompact(e.target.checked)} />
+                      Kompakt
+                    </label>
                   </div>
-                </th>
-              ))}
-            </tr>
-          </thead>
+                </div>
 
-          <tbody>
-            {filtered.map((r) => (
-              <tr key={r.subId}>
-                <td style={{ verticalAlign: "top", padding: 12, borderBottom: "1px solid #eee" }}>
-                  <div style={{ fontSize: 12, color: "#777" }}>
-                    {r.domainName} → {r.criterionName}
+                {/* Product header cells */}
+                {compareProducts.map((p) => (
+                  <div key={p.id} style={{ padding: "12px 14px" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "center", textAlign: "center" }}>
+                      <div style={{ fontWeight: 900 }}>{p.name}</div>
+
+                      <button
+                        onClick={() => {
+                          const next = toggleCompareSelection(p.id);
+                          setCompareIds(next);
+                        }}
+                        style={{
+                          border: "none",
+                          background: "transparent",
+                          padding: 0,
+                          cursor: "pointer",
+                          color: "var(--accent)",
+                          fontWeight: 800,
+                          fontSize: 12,
+                        }}
+                        title="Aus Vergleich entfernen"
+                      >
+                        Entfernen
+                      </button>
+                    </div>
                   </div>
-
-                  <div style={{ fontWeight: 700 }}>{r.subName}</div>
-
-                  {r.shortDesc && (
-                    <div style={{ marginTop: 4, fontSize: 12, color: "#555" }}>
-                      {r.shortDesc}
-                    </div>
-                  )}
-
-                  {(r.pref?.is_ko ?? false) && (
-                    <div
-                      style={{
-                        marginTop: 6,
-                        fontSize: 12,
-                        padding: "3px 8px",
-                        display: "inline-block",
-                        borderRadius: 999,
-                        background: "#ffe5e5"
-                      }}
-                      title="KO-Kriterium: Produkt muss Mindest-Score erreichen"
-                    >
-                      KO (min {r.pref?.ko_threshold ?? 2})
-                    </div>
-                  )}
-
-                  {r.pref?.relevance_level === "muss" && (
-                    <div
-                      style={{
-                        marginTop: 6,
-                        marginLeft: 6,
-                        fontSize: 12,
-                        padding: "3px 8px",
-                        display: "inline-block",
-                        borderRadius: 999,
-                        background: "#e8f0ff"
-                      }}
-                      title="Relevanz: Muss"
-                    >
-                      Muss
-                    </div>
-                  )}
-                </td>
-
-                {r.cells.map((cell) => (
-                  <td
-                    key={cell.productId}
-                    style={{
-                      verticalAlign: "top",
-                      padding: 12,
-                      borderBottom: "1px solid #eee",
-                      background: cell.isKoFail ? "#fff1f1" : "transparent"
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-                      <ScorePill score={cell.scoreVal} />
-                      {cell.isKoFail && (
-                        <span
-                          style={{
-                            fontSize: 12,
-                            padding: "3px 8px",
-                            borderRadius: 999,
-                            background: "#ffe5e5"
-                          }}
-                          title="KO-Verstoss"
-                        >
-                          KO
-                        </span>
-                      )}
-                    </div>
-
-                    <details style={{ marginTop: 8 }}>
-                      <summary style={{ cursor: "pointer" }}>Evidenz</summary>
-                      <div style={{ marginTop: 8 }}>
-                        <p style={{ marginTop: 0 }}>
-                          {cell.scoreObj?.audit_comment ?? "Kein Kommentar vorhanden."}
-                        </p>
-                        <EvidenceLinks links={cell.scoreObj?.evidenz_links ?? []} />
-                      </div>
-                    </details>
-                  </td>
                 ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+              </div>
+            </div>
 
-      <p style={{ marginTop: 12, color: "#777", fontSize: 12 }}>
-        Tipp: Setze KO-Kriterien und Relevanz im Produktdetail (Expert-lite). Der Vergleich respektiert diese Einstellungen.
-      </p>
-    </main>
+            {/* Body */}
+            <div style={{ display: "grid", gap: 0 }}>
+              {tree.domains.map((d: any) => {
+                const theme = domainTheme(d.id);
+
+                return (
+                  <div key={d.id}>
+                    {/* Domain row (visuell klarer) */}
+                    <div
+                      style={{
+                        padding: "10px 14px",
+                        background: theme.tint,
+                        borderTop: "1px solid var(--border)",
+                        fontWeight: 900,
+                        borderLeft: `6px solid ${theme.accent}`,
+                      }}
+                    >
+                      {d.name}
+                      {getShortDesc(d) ? (
+                        <span style={{ marginLeft: 8, color: "var(--text-muted)", fontWeight: 700, fontSize: 12 }}>
+                          {getShortDesc(d)}
+                        </span>
+                      ) : null}
+                    </div>
+
+                    {d.criteria.map((c: any) => {
+                      // Wenn onlyDiffs: Kriterium komplett ausblenden, wenn nix differiert
+                      if (onlyDiffs && !criterionHasAnyDiff(c)) return null;
+
+                      // Accordion pro Kriterium: default = eingeklappt (kein open-Attribut)
+                      return (
+                        <details
+                          key={c.id}
+                          style={{
+                            borderTop: "1px solid var(--border)",
+                            background: "white",
+                          }}
+                        >
+                          {/* Criterion header row = summary */}
+                          <summary
+                            style={{
+                              listStyle: "none",
+                              cursor: "pointer",
+                              userSelect: "none",
+                            }}
+                          >
+                            <div
+                              style={{
+                                display: "grid",
+                                gridTemplateColumns: gridTemplate,
+                                alignItems: "center",
+                                background: "rgba(246,247,249,0.55)",
+                                borderLeft: `4px solid ${theme.accent}`,
+                              }}
+                            >
+                              <div style={{ padding: "12px 14px" }}>
+                                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                                  <span style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 900 }}>▸</span>
+                                  <div style={{ fontWeight: 900 }}>{c.name}</div>
+                                </div>
+                                {!compact && getShortDesc(c) ? (
+                                  <div style={{ marginTop: 6, color: "var(--text-muted)", fontSize: 12 }}>
+                                    {getShortDesc(c)}
+                                  </div>
+                                ) : null}
+                              </div>
+
+                              {/* Progress per product */}
+                              {compareProducts.map((p) => {
+                                const pr = criterionProgress(c, p.id);
+                                return (
+                                  <div key={p.id} style={{ padding: "12px 14px" }}>
+                                    <MiniProgress
+                                      valuePct={pr.pct}
+                                      label={!compact ? `${pr.sum}/${pr.max}` : undefined}
+                                    />
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </summary>
+
+                          {/* Subcriteria rows (dein bestehendes Rendering) */}
+                          <div>
+                            {c.subcriteria.map((sc: any, idx: number) => {
+                              const values = compareProducts.map((p) => {
+                                const s = scoreByProductAndSub.get(p.id)?.get(sc.id)?.score ?? 0;
+                                return s as 0 | 1 | 2;
+                              });
+
+                              if (onlyDiffs && !isDifferent(values)) return null;
+
+                              const pref = prefMap.get(sc.id);
+                              const relevance = (pref?.relevance_level ?? "kann").replace("_", " ");
+                              const isKO = !!pref?.is_ko;
+                              const koTh = (pref?.ko_threshold ?? 2) as 1 | 2;
+
+                              const zebra = idx % 2 === 0 ? "white" : "rgba(246,247,249,0.55)";
+
+                              return (
+                                <div
+                                  key={sc.id}
+                                  style={{
+                                    display: "grid",
+                                    gridTemplateColumns: gridTemplate,
+                                    borderTop: "1px solid var(--border)",
+                                    background: zebra,
+                                  }}
+                                >
+                                  {/* Left cell */}
+                                  <div style={{ padding: "12px 14px" }}>
+                                    <div style={{ fontWeight: 800, fontSize: 13 }}>{sc.name}</div>
+
+                                    {!compact && getShortDesc(sc) ? (
+                                      <div style={{ marginTop: 6, color: "var(--text-muted)", fontSize: 12, lineHeight: 1.35 }}>
+                                        {getShortDesc(sc)}
+                                      </div>
+                                    ) : null}
+
+                                    <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                                      <Badge tone="neutral">{relevance}</Badge>
+                                      {isKO ? <Badge tone="warn">KO ≥ {koTh}</Badge> : null}
+
+                                      {/* Gewicht nur im NICHT-kompakt Mode */}
+                                      {!compact && typeof pref?.weight === "number" ? (
+                                        <Badge tone="neutral">Gewicht: {pref.weight}</Badge>
+                                      ) : null}
+                                    </div>
+                                  </div>
+
+                                  {/* Product cells */}
+                                  {compareProducts.map((p) => {
+                                    const scScore: any = scoreByProductAndSub.get(p.id)?.get(sc.id);
+                                    const score = (scScore?.score ?? 0) as 0 | 1 | 2;
+
+                                    const comment = (scScore?.audit_comment ?? "") as string;
+                                    const evid = scScore?.evidenz_links ?? scScore?.evidence_links ?? [];
+
+                                    return (
+                                      <div key={p.id} style={{ padding: "12px 14px" }}>
+                                        <div style={{ display: "flex", justifyContent: "center" }}>
+                                          <ScorePill score={score} />
+                                        </div>
+
+                                        {!compact && (
+                                          <div style={{ marginTop: 10, color: "var(--text)", fontSize: 13, lineHeight: 1.45 }}>
+                                            {comment
+                                              ? comment.slice(0, 160) + (comment.length > 160 ? "…" : "")
+                                              : <span style={{ color: "var(--text-muted)" }}>Kein Audit-Kommentar.</span>}
+                                          </div>
+                                        )}
+
+                                        {!compact && evid?.length > 0 && (
+                                          <details style={{ marginTop: 10 }}>
+                                            <summary style={{ cursor: "pointer", color: "var(--accent)", fontWeight: 800, fontSize: 12 }}>
+                                              Quellen ({evid.length})
+                                            </summary>
+                                            <div style={{ marginTop: 8, display: "grid", gap: 6, fontSize: 12 }}>
+                                              {evid.slice(0, 6).map((l: any, i: number) => (
+                                                <div key={i}>
+                                                  {l?.url ? (
+                                                    <a href={l.url} target="_blank" rel="noreferrer">
+                                                      {l.label || "Quelle"}
+                                                    </a>
+                                                  ) : (
+                                                    <span style={{ color: "var(--text-muted)" }}>{l?.label || "Quelle"}</span>
+                                                  )}
+                                                </div>
+                                              ))}
+                                              {evid.length > 6 ? <div style={{ color: "var(--text-muted)" }}>…</div> : null}
+                                            </div>
+                                          </details>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </details>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div style={{ marginTop: "var(--s-4)" }}>
+            <Card>
+              <p style={{ color: "var(--text-muted)", margin: 0 }}>
+                Tipp: „Kompakt“ zeigt primär Scores & Relevanz. Für Kommentare/Quellen und Gewichte einfach Kompakt deaktivieren.
+              </p>
+            </Card>
+          </div>
+        </div>
+      </div>
+    </Container>
   );
 }

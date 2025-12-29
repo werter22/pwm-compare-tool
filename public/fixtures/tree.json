@@ -5,31 +5,64 @@
       "name": "Sicherheit & Compliance",
       "criteria": [
         {
+          "id": "c_d1_3_1",
+          "name": "Sicherheitsarchitektur",
+          "subcriteria": [
+            {
+              "id": "s_d1_4_1_1",
+              "name": "E2E/Zero-Knowledge & Threat-Model",
+              "short_desc": "Doku einfordern (Whitepaper, Threat-Model). 2. E2E-Nachweis prüfen (Client-Keys, Traffic-Check). 3. Angriffsannahmen abgleichen (Szenarien).",
+              "chapter_ref": "4.1.1"
+            },
+            {
+              "id": "s_d1_3_1_kryptodesign_kdf_aead_ag_5948081d",
+              "name": "Kryptodesign (KDF/AEAD/Agilität)",
+              "short_desc": "KDF prüfen (Verfahren & Parametrierung nach OWASP/NIST). 2. AEAD prüfen (Modus, Nonce-Strategie). 3. Agilität/Migrationspfad prüfen."
+            },
+            {
+              "id": "s_d1_3_1_schluesselverwaltung_lif_42d7853f",
+              "name": "Schlüsselverwaltung (Lifecycle/Rotation/Trennung)",
+              "short_desc": "Policies/Doku prüfen (Erzeugung, Speicherung, Trennung, Logs). 2. Rotation/Revocation-Tests (Offboarding -> Re-Key?). 3. Krypto-Perioden prüfen."
+            },
+            {
+              "id": "s_d1_3_1_client_seitige_verschlue_7e1bc0bb",
+              "name": "Client-seitige Verschlüsselung - Abdeckung",
+              "short_desc": "Vault-Export/API prüfen (Klartext-Felder?). 2. Traffic-Analyse (nur Blobs?). 3. Hersteller-Roadmap (Zusage 100% client-seitig)."
+            },
+            {
+              "id": "s_d1_3_1_recovery_break_glass_mod_0083b269",
+              "name": "Recovery-/Break-Glass-Modell",
+              "short_desc": "Design-Review (Recovery-Arten, MFA, Time-Lock). 2. Funktionsprobe (Notfallkontakt, Wartezeit/Veto, Logs). 3. Policy-Check (Kein Anbieter-Decrypt, NIST 800-63B)."
+            }
+          ]
+        },
+        {
           "id": "c_d1_3_2",
           "name": "Sicherheitsreife des Anbieters",
           "subcriteria": [
             {
-              "id": "s_3_2_1",
+              "id": "s_d1_4_1_2",
               "name": "Secure SDLC",
-              "short_desc": "Nachweise einfordern (Policies, Threat-Modeling, SAST/DAST, Reviews, SLAs). 2. Mapping gegen NIST SSDF/OWASP SAMM."
+              "short_desc": "Nachweise einfordern (Policies, Threat-Modeling, SAST/DAST, Reviews, SLAs). 2. Mapping gegen NIST SSDF/OWASP SAMM.",
+              "chapter_ref": "4.1.2"
             },
             {
-              "id": "s_3_2_2",
+              "id": "s_d1_3_2_bug_bounty_vulnerability_4dd75d56",
               "name": "Bug-Bounty/Vulnerability Disclosure Program (VDP)",
               "short_desc": "Prüfen: öffentliche VDP-Seite/security.txt, Scope/Regeln, Reaktions-/Fix-SLAs, Disclosure-Historie/Advisories; ggf. aktives Bug-Bounty."
             },
             {
-              "id": "s_3_2_3",
+              "id": "s_d1_3_2_sbom_software_bill_of_ma_5964114f",
               "name": "SBOM (Software Bill of Materials)",
               "short_desc": "Anfordern/prüfen: SBOM pro Release (SPDX/CycloneDX), Vollständigkeit (transitive Dependencies), Aktualität, Bereitstellung, ideal signiert."
             },
             {
-              "id": "s_3_2_4",
+              "id": "s_d1_3_2_dependency_vulnerability_b9797713",
               "name": "Dependency-/ Vulnerability-Management",
               "short_desc": "Prüfen: inventarisierte Dependencies, SCA-Tooling, CVE-Monitoring, klare Patch-SLAs & Release-Notes/Advisories."
             },
             {
-              "id": "s_3_2_5",
+              "id": "s_d1_3_2_secrets_in_ci_cd_5e6dea57",
               "name": "Secrets in CI/CD",
               "short_desc": "Prüfen: zentraler Secret-Vault, kein Klartext (Code/Configs), Log-Maskierung, Least-Privilege, Rotation/kurzlebige Tokens, Härtung/Policies."
             }
@@ -40,27 +73,28 @@
           "name": "Compliance & Nachweise",
           "subcriteria": [
             {
-              "id": "s_3_3_1",
+              "id": "s_d1_4_1_3",
               "name": "ISO/IEC 27001",
-              "short_desc": "Zertifikat einfordern (Akkreditierung, Scope/SoA, Gültigkeit). 2. Scope prüfen (Cloud-Betrieb/Produkt-Teams?). 3. Ergänzende Normen (27017/27018) prüfen."
+              "short_desc": "Zertifikat einfordern (Akkreditierung, Scope/SoA, Gültigkeit). 2. Scope prüfen (Cloud-Betrieb/Produkt-Teams?). 3. Ergänzende Normen (27017/27018) prüfen.",
+              "chapter_ref": "4.1.3"
             },
             {
-              "id": "s_3_3_2",
+              "id": "s_d1_3_3_soc_2_typ_ii_d96607a9",
               "name": "SOC 2 Typ II",
               "short_desc": "SOC 2 Typ II-Report einsehen (Prüfzeitraum, Kriterien, Scope). 2. Findings/Management-Responses, jährliche Erneuerung prüfen. 3. Mapping (Security, Availability, Confidentiality)."
             },
             {
-              "id": "s_3_3_3",
+              "id": "s_d1_3_3_penetrationstests_90514512",
               "name": "Penetrationstests",
               "short_desc": "Externe Reports anfordern (Scope/Methodik, Kritikalitäten, Retest-Nachweise). 2. Remediation-SLAs & Release-Notes prüfen (Zeit bis Fix). 3. Trigger für ausserplanmässige Tests."
             },
             {
-              "id": "s_3_3_4",
+              "id": "s_d1_3_3_krypto_whitepaper_8636a5b9",
               "name": "Krypto-Whitepaper",
               "short_desc": "Aktuelles Whitepaper einfordern (E2E-Begründung, KDF, AEAD, Key-Lifecycle). 2. Standard-Bezüge (NIST/RFC) & externe Audits verifizieren. 3. Konsistenz mit Produktfunktionen."
             },
             {
-              "id": "s_3_3_5",
+              "id": "s_d1_3_3_branchenzertifikate_c5_c_ef24e0ca",
               "name": "Branchenzertifikate (C5, CSPN, Common Criteria, ggf. FIPS)",
               "short_desc": "Zertifikate/Testate anfordern; Register prüfen (C5/CC/CSPN). 2. Scope/Version/Rezertifizierung verifizieren. 3. Gegenanerkennungen (CSPN BSZ) prüfen."
             }
@@ -71,22 +105,23 @@
           "name": "Risiko- & Vorfallhistorie",
           "subcriteria": [
             {
-              "id": "s_3_4_1",
+              "id": "s_d1_4_1_4",
               "name": "Frühere Sicherheitsvorfälle / Breaches",
-              "short_desc": "Öffentliche Advisories/Reports, Medien, CVE-Daten, Forensik-Berichte prüfen. 2. Schweregrad, Muster, Zeit seit Vorfall, Gegenmassnahmen bewerten."
+              "short_desc": "Öffentliche Advisories/Reports, Medien, CVE-Daten, Forensik-Berichte prüfen. 2. Schweregrad, Muster, Zeit seit Vorfall, Gegenmassnahmen bewerten.",
+              "chapter_ref": "4.1.4"
             },
             {
-              "id": "s_3_4_2",
+              "id": "s_d1_3_4_reaktionsfaehigkeit_inci_2c754a90",
               "name": "Reaktionsfähigkeit (Incident Response)",
               "short_desc": "IR-Plan/Team, Playbooks, Übungsnachweise. 2. Zeitachsen früherer Incidents (Entdeckung -> Fix). 3. Patch-SLAs/Retests."
             },
             {
-              "id": "s_3_4_3",
+              "id": "s_d1_3_4_lessons_learned_kontinui_7813df93",
               "name": "Lessons Learned / Kontinuierliche Verbesserung",
               "short_desc": "Beispiele After-Action-Reports + umgesetzte Massnahmen. 2. Policy/Architektur-Updates, Release-Notes, Audit-Findings geschlossen."
             },
             {
-              "id": "s_3_4_4",
+              "id": "s_d1_3_4_kommunikation_und_offenh_6c218ccd",
               "name": "Kommunikation & Offenheit bei Vorfällen",
               "short_desc": "Historische Timeline/Statements (Wer informierte wann/wie?). 2. Policies zur Incident-Kommunikation; Advisory-Portal. 3. Regulatorische Meldungen (72h) erfüllt."
             }
@@ -97,17 +132,18 @@
           "name": "Dark-Web Präsenz",
           "subcriteria": [
             {
-              "id": "s_3_5_1",
+              "id": "s_d1_4_1_5",
               "name": "Dark-Web-Leaks & Funde",
-              "short_desc": "Threat-Intel-Recherche (Anbietername, Domainmuster, Vault-Signaturen). 2. Kreuzcheck mit Advisories. 3. Stichproben (Daten plausibilisieren)."
+              "short_desc": "Threat-Intel-Recherche (Anbietername, Domainmuster, Vault-Signaturen). 2. Kreuzcheck mit Advisories. 3. Stichproben (Daten plausibilisieren).",
+              "chapter_ref": "4.1.5"
             },
             {
-              "id": "s_3_5_2",
+              "id": "s_d1_3_5_advisories_und_incident__676927c9",
               "name": "Advisories & Incident-Timeline (Transparenz)",
               "short_desc": "Trust-Center/Advisory-Portal prüfen (Vollständigkeit, Detailgrad, Root Cause, IOC). 2. Zeitvergleich (Entdeckung -> Meldung -> Fix). 3. Konsistenz vs. externe Berichte."
             },
             {
-              "id": "s_3_5_3",
+              "id": "s_d1_3_5_threat_intel_dark_web_mo_33b7cb2f",
               "name": "Threat-Intel/Dark-Web-Monitoring & Customer-Alerting",
               "short_desc": "Nachweise für TI-Feeds/Provider, Playbooks. 2. Customer-Alerting-Beispiele (Mails, Portal-Hinweise, erzwungene Resets). 3. Feature-Test (Leaked-Credential-Check, Admin-Reporting)."
             }
@@ -118,9 +154,10 @@
           "name": "Open-Source",
           "subcriteria": [
             {
-              "id": "s_3_6_1",
+              "id": "s_d1_4_1_6",
               "name": "Open-Source",
-              "short_desc": "Repos prüfen (Server/Clients offen, Lizenz). 2. Build-Integrität (Signierte Releases, reproducible Builds). 3. Release-Prozess (Versionierung, Security-Notes). 4. Community-Health."
+              "short_desc": "Repos prüfen (Server/Clients offen, Lizenz). 2. Build-Integrität (Signierte Releases, reproducible Builds). 3. Release-Prozess (Versionierung, Security-Notes). 4. Community-Health.",
+              "chapter_ref": "4.1.6"
             }
           ]
         }
@@ -131,38 +168,144 @@
       "name": "Datenhoheit, Lieferkette & Governance",
       "criteria": [
         {
-          "id": "c_d2_3_2",
+          "id": "c_d2_datenresiden",
           "name": "Datenresidenz / Jurisdiktion",
           "subcriteria": [
             {
-              "id": "s_3_2_1",
+              "id": "s_d2_4_2_1",
               "name": "Dokumentation / Subprozessoren",
-              "short_desc": "DPA + Subprozessorliste + Speicherorte anfordern"
+              "short_desc": "DPA + Subprozessorliste + Speicherorte anfordern",
+              "chapter_ref": "4.2.1"
             },
             {
-              "id": "s_3_2_2",
+              "id": "s_d2_datenresiden_datenfluss_und_support_d_c9ffb986",
+              "name": "Datenfluss & Support-Daten",
+              "short_desc": "Datenflussdiagramm erstellen, prüfen ob Logs ausserhalb CH/EU fliessen"
+            },
+            {
+              "id": "s_d2_datenresiden_region_konfiguration_5c637a43",
+              "name": "Region-Konfiguration",
+              "short_desc": "Prüfen ob Region technisch erzwingbar ist"
+            },
+            {
+              "id": "s_d2_datenresiden_policy_abgleich_5335b426",
+              "name": "Policy-Abgleich",
+              "short_desc": "Speicherorte gegen interne Richtlinien abgleichen"
+            }
+          ]
+        },
+        {
+          "id": "c_d2_supply_chain",
+          "name": "Supply-Chain-Management",
+          "subcriteria": [
+            {
+              "id": "s_d2_4_2_2",
               "name": "SBOM-Transparenz",
-              "short_desc": "SBOM oder Komponentenliste prüfen"
+              "short_desc": "SBOM oder Komponentenliste prüfen",
+              "chapter_ref": "4.2.2"
             },
             {
-              "id": "s_3_2_3",
+              "id": "s_d2_supply_chain_build_und_release_integr_dfacc15b",
+              "name": "Build- & Release-Integrität",
+              "short_desc": "Code-Signaturen, 4-Augen-Prinzip & Release-Prozess prüfen"
+            },
+            {
+              "id": "s_d2_supply_chain_lieferanten_risiko_39d6f4dd",
+              "name": "Lieferanten-Risiko",
+              "short_desc": "Drittanbieterpolitik & Auditing prüfen"
+            }
+          ]
+        },
+        {
+          "id": "c_d2_geopolitisch",
+          "name": "Geopolitische & rechtliche Exponierung",
+          "subcriteria": [
+            {
+              "id": "s_d2_4_2_3",
               "name": "Rechts- & Hostingstruktur",
-              "short_desc": "Unternehmenssitz, Hostingstandorte & CLOUDACT-Risiko prüfen"
+              "short_desc": "Unternehmenssitz, Hostingstandorte & CLOUDACT-Risiko prüfen",
+              "chapter_ref": "4.2.3"
             },
             {
-              "id": "s_3_2_4",
+              "id": "s_d2_geopolitisch_behoerdenzugriffe_8ec1932d",
+              "name": "Behördenzugriffe",
+              "short_desc": "Transparenzberichte prüfen"
+            },
+            {
+              "id": "s_d2_geopolitisch_exportkontrolle_3722ba08",
+              "name": "Exportkontrolle",
+              "short_desc": "Kryptokontroll- und Sanktionsrisiko prüfen"
+            }
+          ]
+        },
+        {
+          "id": "c_d2_eigentum_und",
+          "name": "Eigentum & Governance",
+          "subcriteria": [
+            {
+              "id": "s_d2_4_2_4",
               "name": "Eigentümerstruktur",
-              "short_desc": "Eigentümer- & Managementstruktur prüfen"
+              "short_desc": "Eigentümer- & Managementstruktur prüfen",
+              "chapter_ref": "4.2.4"
             },
             {
-              "id": "s_3_2_5",
+              "id": "s_d2_eigentum_und_change_of_control_9cece724",
+              "name": "Change-of-Control",
+              "short_desc": "Sonderkündigungs- & Informationsrechte prüfen"
+            },
+            {
+              "id": "s_d2_eigentum_und_escrow_und_datenzugriff_7dc73d9f",
+              "name": "Escrow & Datenzugriff",
+              "short_desc": "Zugriff auf Kundendaten bei Insolvenz prüfen"
+            }
+          ]
+        },
+        {
+          "id": "c_d2_total_cost_o",
+          "name": "Total Cost of Ownership (TCO)",
+          "subcriteria": [
+            {
+              "id": "s_d2_4_2_5",
               "name": "Kostenbestandteile",
-              "short_desc": "Preislisten, Feature-Kosten & Consulting erfassen"
+              "short_desc": "Preislisten, Feature-Kosten & Consulting erfassen",
+              "chapter_ref": "4.2.5"
             },
             {
-              "id": "s_3_2_6",
+              "id": "s_d2_total_cost_o_betrachtungszeitraum_e0ce8a0c",
+              "name": "Betrachtungszeitraum",
+              "short_desc": "3-Jahres Kostenmodell erstellen"
+            },
+            {
+              "id": "s_d2_total_cost_o_szenario_analyse_a70d2818",
+              "name": "Szenario-Analyse",
+              "short_desc": "Best-/Real-/Worst-Case kalkulieren"
+            }
+          ]
+        },
+        {
+          "id": "c_d2_vendor_lock_",
+          "name": "Vendor Lock-in & Exit-Strategie",
+          "subcriteria": [
+            {
+              "id": "s_d2_4_2_6",
               "name": "Exportfähigkeit",
-              "short_desc": "Export von Secrets & Metadaten testen"
+              "short_desc": "Export von Secrets & Metadaten testen",
+              "chapter_ref": "4.2.6"
+            },
+            {
+              "id": "s_d2_vendor_lock__api_offenheit_c3596abb",
+              "name": "API-Offenheit",
+              "short_desc": "API-Scope (User, Policies, Vault-Daten) prüfen"
+            },
+            {
+              "id": "s_d2_vendor_lock__vertragliche_exit_regeln_c0452482",
+              "name": "Vertragliche Exit-Regeln",
+              "short_desc": "Kündigungsfristen & Exit-Support prüfen"
+            },
+            {
+              "id": "s_d2_vendor_lock__fallback_betrieb_58f924a7",
+              "name": "Fallback-Betrieb",
+              "short_desc": "Read-Only / Self-Host prüfen"
             }
           ]
         }
@@ -173,53 +316,330 @@
       "name": "Produkt, Betrieb & Adoption",
       "criteria": [
         {
-          "id": "c_d3_4_3",
+          "id": "c_d3_benutzbarkei",
           "name": "Benutzbarkeit & Adoption",
           "subcriteria": [
             {
-              "id": "s_4_3_1",
+              "id": "s_d3_4_3_1",
               "name": "UX-Heuristik-Evaluation",
-              "short_desc": "Anwendung von Nielsen's 10 Usability-Heuristiken zur Bewertung der Benutzeroberfläche"
+              "short_desc": "Anwendung von Nielsen's 10 Usability-Heuristiken zur Bewertung der Benutzeroberfläche",
+              "chapter_ref": "4.3.1"
             },
             {
-              "id": "s_4_3_2",
+              "id": "s_d3_benutzbarkei_cognitive_walkthroughs_56af005c",
+              "name": "Cognitive Walkthroughs",
+              "short_desc": "Durchführung von strukturierten Nutzertests für Kernaufgaben (Passwort erstellen, speichern, autofill, teilen)"
+            },
+            {
+              "id": "s_d3_benutzbarkei_onboarding_analyse_bb9b4e3b",
+              "name": "Onboarding-Analyse",
+              "short_desc": "Bewertung der Einführungsmaterialien und First-Time-User-Experience"
+            },
+            {
+              "id": "s_d3_benutzbarkei_plattformtests_a96cb872",
+              "name": "Plattformtests",
+              "short_desc": "Funktionsprüfung auf Desktop (Windows, macOS, Linux), Mobile (iOS, Android) und Browser-Extensions (Chrome, Firefox, Safari, Edge)"
+            },
+            {
+              "id": "s_d3_benutzbarkei_admin_interface_bewertun_9984f339",
+              "name": "Admin-Interface-Bewertung",
+              "short_desc": "Prüfung der Verwaltungsfunktionen auf Klarheit und Effizienz"
+            }
+          ]
+        },
+        {
+          "id": "c_d3_enterprise_f",
+          "name": "Enterprise-Funktionen",
+          "subcriteria": [
+            {
+              "id": "s_d3_4_3_2",
               "name": "SSO-Kompatibilitätstest",
-              "short_desc": "Prüfung der Unterstützung von SAML 2.0 und OIDC mit gängigen Identity Providern (Okta, Microsoft Entra ID, Google Workspace)"
+              "short_desc": "Prüfung der Unterstützung von SAML 2.0 und OIDC mit gängigen Identity Providern (Okta, Microsoft Entra ID, Google Workspace)",
+              "chapter_ref": "4.3.2"
             },
             {
-              "id": "s_4_3_3",
+              "id": "s_d3_enterprise_f_scim_funktionstest_f7743c7a",
+              "name": "SCIM-Funktionstest",
+              "short_desc": "Bewertung der automatischen Benutzer-Synchronisation und Lifecycle-Management"
+            },
+            {
+              "id": "s_d3_enterprise_f_rbac_evaluation_7d2c8f88",
+              "name": "RBAC-Evaluation",
+              "short_desc": "Prüfung der Granularität von Rollen, Gruppen und Richtlinie"
+            },
+            {
+              "id": "s_d3_enterprise_f_audit_export_test_88653781",
+              "name": "Audit-Export-Test",
+              "short_desc": "Verfügbarkeit und Format von Audit-Logs (CSV, JSON, SIEM-Integration)"
+            },
+            {
+              "id": "s_d3_enterprise_f_api_dokumentation_621b0047",
+              "name": "API-Dokumentation",
+              "short_desc": "Bewertung der API-Vollständigkeit, Dokumentation und REST/JSON-Unterstützung"
+            },
+            {
+              "id": "s_d3_enterprise_f_device_posture_46e27dd1",
+              "name": "Device Posture",
+              "short_desc": "Prüfung der Gerätesicherheits-Anforderungen"
+            }
+          ]
+        },
+        {
+          "id": "c_d3_integration_",
+          "name": "Integration & Interoperabilität",
+          "subcriteria": [
+            {
+              "id": "s_d3_4_3_3",
               "name": "IAM/Directory-Integration",
-              "short_desc": "Test der Anbindung an AD, LDAP, Azure AD"
+              "short_desc": "Test der Anbindung an AD, LDAP, Azure AD",
+              "chapter_ref": "4.3.3"
             },
             {
-              "id": "s_4_3_4",
+              "id": "s_d3_integration__siem_kompatibilitaet_cadfe9be",
+              "name": "SIEM-Kompatibilität",
+              "short_desc": "Prüfung vorkonfigurierter Konnektoren für Splunk, Sumo Logic, Elastic, Datadog​"
+            },
+            {
+              "id": "s_d3_integration__itsm_integration_6a92efda",
+              "name": "ITSM-Integration",
+              "short_desc": "Bewertung der Anbindung an ServiceNow, Jira, etc.​"
+            },
+            {
+              "id": "s_d3_integration__sdk_verfuegbarkeit_8590110b",
+              "name": "SDK-Verfügbarkeit",
+              "short_desc": "Prüfung von offiziellen SDKs für verschiedene Programmiersprachen"
+            },
+            {
+              "id": "s_d3_integration__import_export_97d7d653",
+              "name": "Import/Export",
+              "short_desc": "Test der Unterstützung verschiedener Formate (CSV, JSON) und Migrationstools von anderen Password Managern​"
+            },
+            {
+              "id": "s_d3_integration__cli_verfuegbarkeit_und_f_a5c6b6bd",
+              "name": "CLI-Verfügbarkeit und Funktionalität",
+              "short_desc": "Überprüfung von Kommandozeilen-Werkzeugen für Automation und DevOps-Integration"
+            },
+            {
+              "id": "s_d3_integration__developer_experience_a6b11c81",
+              "name": "Developer Experience",
+              "short_desc": "Bewertung von Dokumentation für Entwickler, SDKs in verschiedenen Sprachen"
+            }
+          ]
+        },
+        {
+          "id": "c_d3_secrets_pam_",
+          "name": "Secrets/PAM-Eignung",
+          "subcriteria": [
+            {
+              "id": "s_d3_4_3_4",
               "name": "Secrets-Management-Test",
-              "short_desc": "Prüfung der Speicherung von SSH-Keys, API-Keys, Zertifikaten, Datenbank-Credentials​"
+              "short_desc": "Prüfung der Speicherung von SSH-Keys, API-Keys, Zertifikaten, Datenbank-Credentials​",
+              "chapter_ref": "4.3.4"
             },
             {
-              "id": "s_4_3_5",
+              "id": "s_d3_secrets_pam__session_recording_6158406b",
+              "name": "Session-Recording",
+              "short_desc": "Bewertung der Aufzeichnung privilegierter Sitzungen (Video/Command-line)"
+            },
+            {
+              "id": "s_d3_secrets_pam__rotation_funktionalitaet_c7ecee77",
+              "name": "Rotation-Funktionalität",
+              "short_desc": "Test der automatischen Passwort- und Key-Rotation​"
+            },
+            {
+              "id": "s_d3_secrets_pam__jit_access_31d39cca",
+              "name": "JIT-Access",
+              "short_desc": "Prüfung zeitlich begrenzter Rechtevergabe und Genehmigungsworkflows"
+            },
+            {
+              "id": "s_d3_secrets_pam__maschinen_id_management_92fabfaa",
+              "name": "Maschinen-ID-Management",
+              "short_desc": "Bewertung der Verwaltung von Service-Accounts und API-Credentials​"
+            },
+            {
+              "id": "s_d3_secrets_pam__privileged_analytics_c1938534",
+              "name": "Privileged Analytics",
+              "short_desc": "Prüfung von Anomalie-Erkennung bei privilegierten Zugriffen"
+            }
+          ]
+        },
+        {
+          "id": "c_d3_zuverlaessig",
+          "name": "Zuverlässigkeit & Performance",
+          "subcriteria": [
+            {
+              "id": "s_d3_4_3_5",
               "name": "SLA-Dokumentation",
-              "short_desc": "Analyse der vertraglich garantierten Verfügbarkeit"
+              "short_desc": "Analyse der vertraglich garantierten Verfügbarkeit",
+              "chapter_ref": "4.3.5"
             },
             {
-              "id": "s_4_3_6",
+              "id": "s_d3_zuverlaessig_status_historie_05aef7c0",
+              "name": "Status-Historie",
+              "short_desc": "Überprüfung der öffentlichen Status-Page über 12 Monate"
+            },
+            {
+              "id": "s_d3_zuverlaessig_incident_response_bewert_70a2231d",
+              "name": "Incident-Response-Bewertung",
+              "short_desc": "Analyse vergangener Vorfälle und Reaktionszeiten"
+            },
+            {
+              "id": "s_d3_zuverlaessig_rto_rpo_spezifikation_e8b051ba",
+              "name": "RTO/RPO-Spezifikation",
+              "short_desc": "Dokumentierte Recovery-Ziele"
+            },
+            {
+              "id": "s_d3_zuverlaessig_latenz_tests_0596aa5b",
+              "name": "Latenz-Tests",
+              "short_desc": "Performance-Messung in relevanten Regionen"
+            },
+            {
+              "id": "s_d3_zuverlaessig_offline_access_e9c5f139",
+              "name": "Offline-Access",
+              "short_desc": "Prüfung der Funktionsfähigkeit bei Internetausfall"
+            },
+            {
+              "id": "s_d3_zuverlaessig_multi_region_hosting_39e93f1e",
+              "name": "Multi-Region-Hosting",
+              "short_desc": "Bewertung der geografischen Redundanz​"
+            }
+          ]
+        },
+        {
+          "id": "c_d3_support_und_",
+          "name": "Support & Erfolg",
+          "subcriteria": [
+            {
+              "id": "s_d3_4_3_6",
               "name": "Support-SLA-Analyse",
-              "short_desc": "Die vertraglich garantierten Response- und Resolution-Zeiten nach Severity werden analysiert. Standard-SLA-Definitionen umfassen typischerweise: • P1 (Kritisch): System down, Gesch…"
+              "short_desc": "Die vertraglich garantierten Response- und Resolution-Zeiten nach Severity werden analysiert. Standard-SLA-Definitionen umfassen typischerweise: • P1 (Kritisch): System down, Gesch…",
+              "chapter_ref": "4.3.6"
             },
             {
-              "id": "s_4_3_7",
+              "id": "s_d3_support_und__sprachunterstuetzung_0028bc75",
+              "name": "Sprachunterstützung",
+              "short_desc": "Prüfung verfügbarer Support-Sprachen (Deutsch für DACH-Region kritisch)"
+            },
+            {
+              "id": "s_d3_support_und__zeitzonenabdeckung_645cf3d2",
+              "name": "Zeitzonenabdeckung",
+              "short_desc": "Verfügbarkeit von Support während Geschäftszeiten"
+            },
+            {
+              "id": "s_d3_support_und__csm_verfuegbarkeit_ece9c646",
+              "name": "CSM-Verfügbarkeit",
+              "short_desc": "Prüfung dedizierter Customer Success Manager bei Enterprise-Plänen"
+            },
+            {
+              "id": "s_d3_support_und__dokumentationsqualitaet_aee4f2a6",
+              "name": "Dokumentationsqualität",
+              "short_desc": "Bewertung von Knowledge Base, Video-Tutorials, Best-Practice-Guides"
+            },
+            {
+              "id": "s_d3_support_und__community_399cbcb7",
+              "name": "Community",
+              "short_desc": "Aktivität in Foren, GitHub, User Groups"
+            },
+            {
+              "id": "s_d3_support_und__onboarding_services_178531e1",
+              "name": "Onboarding-Services",
+              "short_desc": "Verfügbarkeit von Product Training und Implementation Support"
+            }
+          ]
+        },
+        {
+          "id": "c_d3_adoptions_un",
+          "name": "Adoptions- & Change-Mgmt-Faktoren",
+          "subcriteria": [
+            {
+              "id": "s_d3_4_3_7",
               "name": "Schulungsmaterial-Analyse",
-              "short_desc": "Qualität und Umfang von Trainingsvideos, Webinaren, Handbüchern"
+              "short_desc": "Qualität und Umfang von Trainingsvideos, Webinaren, Handbüchern",
+              "chapter_ref": "4.3.7"
             },
             {
-              "id": "s_4_3_8",
+              "id": "s_d3_adoptions_un_change_management_ressou_338e008b",
+              "name": "Change-Management-Ressourcen",
+              "short_desc": "Verfügbarkeit von Templates, Kommunikationsplänen, Rollout-Guides"
+            },
+            {
+              "id": "s_d3_adoptions_un_champions_programm_4870983a",
+              "name": "Champions-Programm",
+              "short_desc": "Prüfung strukturierter Programme zur Identifikation und Befähigung von internen Promotoren"
+            },
+            {
+              "id": "s_d3_adoptions_un_adoption_tracking_f2a558dc",
+              "name": "Adoption-Tracking",
+              "short_desc": "Tools zur Messung von Nutzungsraten und Identifikation von laggards"
+            },
+            {
+              "id": "s_d3_adoptions_un_kommunikations_templates_060602da",
+              "name": "Kommunikations-Templates",
+              "short_desc": "Verfügbarkeit von vorgefertigten Email-Templates, FAQs"
+            }
+          ]
+        },
+        {
+          "id": "c_d3_roadmap_und_",
+          "name": "Roadmap & Zukunftsfähigkeit",
+          "subcriteria": [
+            {
+              "id": "s_d3_4_3_8",
               "name": "Roadmap-Analyse",
-              "short_desc": "Prüfung der öffentlichen Roadmap auf Detailgrad und Zeitrahmen"
+              "short_desc": "Prüfung der öffentlichen Roadmap auf Detailgrad und Zeitrahmen",
+              "chapter_ref": "4.3.8"
             },
             {
-              "id": "s_4_3_9",
+              "id": "s_d3_roadmap_und__release_frequenz_821d02cf",
+              "name": "Release-Frequenz",
+              "short_desc": "Analyse der Release Notes der letzten 12-24 Monate"
+            },
+            {
+              "id": "s_d3_roadmap_und__feature_velocity_2c1b3974",
+              "name": "Feature-Velocity",
+              "short_desc": "Die Implementierungsgeschwindigkeit anhand der Lead Time (Zeit von Ankündigung bis Bereitstellung) und der Feature Completion Rate (Prozentsatz tatsächlich gelieferter vs. angekünd…"
+            },
+            {
+              "id": "s_d3_roadmap_und__deprecation_policy_35580060",
+              "name": "Deprecation-Policy",
+              "short_desc": "Prüfung dokumentierter Prozesse für End-of-Life-Features"
+            },
+            {
+              "id": "s_d3_roadmap_und__product_vision_a7a971ea",
+              "name": "Product Vision",
+              "short_desc": "Bewertung der strategischen Ausrichtung (z.B. Passkey-Support, Passwordless)"
+            },
+            {
+              "id": "s_d3_roadmap_und__innovation_indikatoren_ac3d066e",
+              "name": "Innovation-Indikatoren",
+              "short_desc": "Adoption neuer Standards (FIDO2, WebAuthn, SCIM 2.0)"
+            },
+            {
+              "id": "s_d3_roadmap_und__community_feedback_9d0dfbf1",
+              "name": "Community-Feedback",
+              "short_desc": "Integration von User-Requests in Roadmap"
+            }
+          ]
+        },
+        {
+          "id": "c_d3_finanzielle_",
+          "name": "Finanzielle Gesundheit",
+          "subcriteria": [
+            {
+              "id": "s_d3_4_3_9",
               "name": "Financial Reports",
-              "short_desc": "Analyse öffentlich verfügbarer Finanzdaten (bei börsennotierten oder Private-Equity-backed Companies)"
+              "short_desc": "Analyse öffentlich verfügbarer Finanzdaten (bei börsennotierten oder Private-Equity-backed Companies)",
+              "chapter_ref": "4.3.9"
+            },
+            {
+              "id": "s_d3_finanzielle__funding_history_79c9d9b7",
+              "name": "Funding-History",
+              "short_desc": "Prüfung von Finanzierungsrunden und Investoren (Crunchbase, PitchBook)"
+            },
+            {
+              "id": "s_d3_finanzielle__saas_metriken_bewertung_e629ec6d",
+              "name": "SaaS-Metriken-Bewertung",
+              "short_desc": "Gross Margin >75%: Zeigt operative Effizienz und dass das Geschäftsmodell skalierbar ist"
             }
           ]
         }

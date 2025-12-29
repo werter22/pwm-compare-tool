@@ -1,0 +1,85 @@
+:root {
+  /* Accent (modern, nicht zu grell) */
+  --accent: #0b3a82;
+  --accent-2: #1b5fc7;
+
+  /* Neutrals */
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --muted: #f6f7f9;
+  --border: #e6e8ee;
+  --text: #0f172a;
+  --text-muted: #475569;
+
+  /* Semantic */
+  --ok-bg: #e8f7ee;
+  --ok-fg: #166534;
+  --warn-bg: #fff7e6;
+  --warn-fg: #92400e;
+  --crit-bg: #ffe8e8;
+  --crit-fg: #991b1b;
+
+  /* Radii + shadow (modern card look, aber dezent) */
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-pill: 999px;
+
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 8px 20px rgba(15, 23, 42, 0.08);
+
+  /* Spacing */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+
+  /* Typography */
+  --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Liberation Sans", sans-serif;
+  
+
+    /* Surfaces (frosted) */
+  --surface: rgba(245, 247, 250, 0.72);
+  --surface-strong: rgba(245, 247, 250, 0.88);
+  --surface-border: rgba(20, 35, 60, 0.10);
+  --surface-shadow: 0 10px 30px rgba(20, 35, 60, 0.06);
+
+  /* Backdrop blur for frosted glass */
+  --surface-blur: 10px;
+
+  /* Page background */
+  --page-bg: #f6f7f9;
+
+  .wizardOptionsGrid {
+  display: grid;
+  gap: 12px;
+  align-items: stretch;
+  grid-auto-rows: 1fr;
+}
+
+.wizardOptionsGrid[data-cols="3"] {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.wizardOptionsGrid[data-cols="4"] {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+@media (max-width: 980px) {
+  .wizardOptionsGrid[data-cols="4"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .wizardOptionsGrid[data-cols="3"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .wizardOptionsGrid[data-cols="4"],
+  .wizardOptionsGrid[data-cols="3"] {
+    grid-template-columns: 1fr;
+  }
+}
+
+}

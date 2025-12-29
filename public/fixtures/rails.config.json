@@ -1,0 +1,108 @@
+[
+  {
+    "key": "data_residency",
+    "title": "Datenstandort / Datenresidenz",
+    "helper": "Wo liegen Daten, welche Regionen sind steuerbar, Jurisdiktion/Policy.",
+    "subcriterion_ids": [
+      "s_d2_4_2_1",
+      "s_d2_datenresiden_datenfluss_und_support_d_c9ffb986",
+      "s_d2_datenresiden_region_konfiguration_5c637a43",
+      "s_d2_datenresiden_policy_abgleich_5335b426"
+    ]
+  },
+  {
+    "key": "self_hosting",
+    "title": "Self-Hosting / On-Prem",
+    "helper": "Option für On-Prem/Self-Hosting (falls relevant oder zwingend).",
+    "subcriterion_ids": [
+      "s_d2_vendor_lock__fallback_betrieb_58f924a7"
+    ]
+  },
+  {
+    "key": "sso",
+    "title": "SSO (SAML/OIDC)",
+    "helper": "Zentrale Anmeldung für Adoption und Sicherheit.",
+    "subcriterion_ids": [
+      "s_d3_4_3_2",
+      "s_d3_4_3_3"
+    ]
+  },
+  {
+    "key": "scim",
+    "title": "SCIM / Provisioning",
+    "helper": "Automatisierte Benutzerverwaltung (Joiner/Mover/Leaver).",
+    "subcriterion_ids": [
+      "s_d3_enterprise_f_scim_funktionstest_f7743c7a"
+    ]
+  },
+  {
+    "key": "rbac",
+    "title": "Rollen & Rechte (RBAC)",
+    "helper": "Feingranulare Adminrechte und Rollenmodell.",
+    "subcriterion_ids": [
+      "s_d3_enterprise_f_rbac_evaluation_7d2c8f88"
+    ]
+  },
+  {
+    "key": "audit_evidence",
+    "title": "Nachweise (ISO/SOC/PenTest)",
+    "helper": "Auditberichte und belastbare Nachweise.",
+    "subcriterion_ids": [
+      "s_d1_4_1_3",
+      "s_d1_3_3_soc_2_typ_ii_d96607a9",
+      "s_d1_3_3_penetrationstests_90514512",
+      "s_d1_3_3_krypto_whitepaper_8636a5b9",
+      "s_d1_3_3_branchenzertifikate_c5_c_ef24e0ca"
+    ]
+  },
+  {
+    "key": "crypto_zk",
+    "title": "Kryptodesign / Zero Knowledge",
+    "helper": "E2E/Zero Knowledge, Schluesselkonzept, Recovery-Modell.",
+    "subcriterion_ids": [
+      "s_d1_4_1_1",
+      "s_d1_3_1_kryptodesign_kdf_aead_ag_5948081d",
+      "s_d1_3_1_schluesselverwaltung_lif_42d7853f",
+      "s_d1_3_1_client_seitige_verschlue_7e1bc0bb",
+      "s_d1_3_1_recovery_break_glass_mod_0083b269"
+    ]
+  },
+  {
+    "key": "incident_ops",
+    "title": "Betrieb (SLA/Status/Incidents)",
+    "helper": "Verfügbarkeit, Status-Historie, Incident Response.",
+    "subcriterion_ids": [
+      "s_d3_4_3_5",
+      "s_d3_zuverlaessig_status_historie_05aef7c0",
+      "s_d3_zuverlaessig_incident_response_bewert_70a2231d",
+      "s_d3_zuverlaessig_rto_rpo_spezifikation_e8b051ba",
+      "s_d1_3_4_reaktionsfaehigkeit_inci_2c754a90",
+      "s_d1_3_4_kommunikation_und_offenh_6c218ccd"
+    ]
+  },
+  {
+    "key": "export_exit",
+    "title": "Export & Exit (Vendor Lock-in)",
+    "helper": "Exportfähigkeit, API-Offenheit, Exit-Regeln.",
+    "subcriterion_ids": [
+      "s_d2_4_2_6",
+      "s_d2_vendor_lock__api_offenheit_c3596abb",
+      "s_d2_vendor_lock__vertragliche_exit_regeln_c0452482",
+      "s_d3_integration__import_export_97d7d653"
+    ]
+  },
+  {
+    "key": "support_enablement",
+    "title": "Support & Enablement",
+    "helper": "Support-SLAs, Doku, Onboarding, Sprachen/Zeitzonen.",
+    "subcriterion_ids": [
+      "s_d3_4_3_6",
+      "s_d3_support_und__sprachunterstuetzung_0028bc75",
+      "s_d3_support_und__zeitzonenabdeckung_645cf3d2",
+      "s_d3_support_und__csm_verfuegbarkeit_ece9c646",
+      "s_d3_support_und__dokumentationsqualitaet_aee4f2a6",
+      "s_d3_support_und__onboarding_services_178531e1",
+      "s_d3_4_3_7"
+    ]
+  }
+]

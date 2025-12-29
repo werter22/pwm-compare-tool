@@ -15,3 +15,10 @@ export async function getScores() {
   if (!r.ok) throw new Error("scores.json fehlt");
   return r.json();
 }
+
+export async function getRailsConfig() {
+  const r = await fetch(`${import.meta.env.BASE_URL}fixtures/rails.config.json`);
+  if (!r.ok) throw new Error("rails.config.json fehlt");
+  return r.json();
+}
+

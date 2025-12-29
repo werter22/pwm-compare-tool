@@ -1,0 +1,22 @@
+@import "./tokens.css";
+
+* { box-sizing: border-box; }
+html, body { height: 100%; html {
+  overflow-y: scroll;
+}
+ }
+body {
+  margin: 0;
+  font-family: var(--font);
+  color: var(--text);
+  background: var(--bg);
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+h1 { font-size: 28px; line-height: 1.15; letter-spacing: -0.02em; margin: 0; }
+h2 { font-size: 18px; line-height: 1.25; margin: 0; }
+p { margin: 0; color: var(--text-muted); }
+
+code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
