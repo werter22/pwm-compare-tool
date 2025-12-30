@@ -26,13 +26,33 @@ export default function TopNav() {
   const loc = useLocation();
 
   return (
-    <header style={{ position: "sticky", top: 0, zIndex: 20, background: "rgba(255,255,255,0.9)", backdropFilter: "blur(8px)", borderBottom: "1px solid var(--border)" }}>
+    <header
+      style={{
+        position: "sticky",
+        top: 0,
+        zIndex: 20,
+        background: "rgba(255,255,255,0.9)",
+        backdropFilter: "blur(8px)",
+        borderBottom: "1px solid var(--border)",
+      }}
+    >
       <Container>
         <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0" }}>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+          {/* Brand -> Home */}
+          <NavLink
+            to="/"
+            aria-label="Zur Startseite"
+            style={{
+              display: "inline-flex",
+              alignItems: "baseline",
+              gap: 10,
+              textDecoration: "none",
+              color: "inherit",
+            }}
+          >
             <strong style={{ letterSpacing: "-0.01em" }}>PWM Vergleich</strong>
             <span style={{ color: "var(--text-muted)", fontSize: 12 }}>Prototyp</span>
-          </div>
+          </NavLink>
 
           <nav style={{ display: "flex", gap: 6, marginLeft: 8 }}>
             <TabLink to="/ranking" label="Ranking" />

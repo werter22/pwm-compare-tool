@@ -454,11 +454,6 @@ export default function ProductRoute() {
 
                                           <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                                             <Badge tone="neutral">{relevance}</Badge>
-                                            {evidCount > 0 ? (
-                                              <Badge tone="neutral">Quellen: {evidCount}</Badge>
-                                            ) : (
-                                              <Badge tone="warn">Keine Quellen</Badge>
-                                            )}
                                           </div>
                                         </div>
 

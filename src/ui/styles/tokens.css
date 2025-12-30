@@ -51,7 +51,9 @@
   /* Page background */
   --page-bg: #f6f7f9;
 
-  .wizardOptionsGrid {
+}
+
+.wizardOptionsGrid {
   display: grid;
   gap: 12px;
   align-items: stretch;
@@ -80,6 +82,4 @@
   .wizardOptionsGrid[data-cols="3"] {
     grid-template-columns: 1fr;
   }
-}
-
 }

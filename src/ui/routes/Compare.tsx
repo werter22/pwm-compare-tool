@@ -423,9 +423,22 @@ export default function Compare() {
 
                                         {!compact && (
                                           <div style={{ marginTop: 10, color: "var(--text)", fontSize: 13, lineHeight: 1.45 }}>
-                                            {comment
-                                              ? comment.slice(0, 160) + (comment.length > 160 ? "…" : "")
-                                              : <span style={{ color: "var(--text-muted)" }}>Kein Audit-Kommentar.</span>}
+                                            {comment ? (
+                                              (
+                                                <details>
+                                                  <summary style={{ cursor: "pointer", color: "var(--text)", fontWeight: 700, fontSize: 13 }}>
+                                                  {" "}
+                                                    <span style={{ color: "var(--accent)", fontWeight: 800, fontSize: 12 }}>
+                                                      Mehr anzeigen
+                                                    </span>
+                                                  </summary>
+                                                  <div style={{ marginTop: 8 }}>{comment}</div>
+                                                </details>
+                                              )
+                                            ) : (
+                                              <span style={{ color: "var(--text-muted)" }}>Kein Audit-Kommentar.</span>
+                                            )}
+
                                           </div>
                                         )}
 
