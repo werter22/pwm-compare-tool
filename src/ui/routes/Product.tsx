@@ -174,22 +174,6 @@ export default function ProductRoute() {
     return m;
   }, [tree, prefMap, scoreMap, onlyRelevant, onlyCritical]); // depends on filter + maps
 
-  const overallStats = useMemo(() => {
-    if (!tree) return { sum: 0, max: 0, critical: 0 };
-    let sum = 0;
-    let max = 0;
-    let critical = 0;
-
-    for (const d of (tree as any).domains) {
-      const st = domainStats.get(d.id);
-      if (!st) continue;
-      sum += st.sum;
-      max += st.max;
-      critical += st.criticalCount;
-    }
-
-    return { sum, max, critical };
-  }, [tree, domainStats]);
 
   if (!tree) {
     return (
@@ -226,7 +210,7 @@ export default function ProductRoute() {
           right={
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <Button variant="secondary" onClick={() => nav("/ranking")}>
-                Zurueck
+                Zurück
               </Button>
 
               <Button

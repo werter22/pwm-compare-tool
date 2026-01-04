@@ -4,7 +4,7 @@ import { getProducts, getScores, getTree } from "../../api/repo";
 import { evaluateProducts } from "../../engine/evaluate";
 import { ensurePreferencesForTree, loadPreferences, savePreferences } from "../../state/preferences";
 import { loadCompareSelection, toggleCompareSelection } from "../../state/compare";
-import { Link, useNavigate } from "react-router-dom";
+import { Link} from "react-router-dom";
 
 import Container from "../components/Container";
 import Card from "../components/Card";
@@ -207,7 +207,6 @@ function ProductCardRow({
 }
 
 export default function Ranking() {
-  const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
   const [tree, setTree] = useState<Tree | null>(null);
   const [scores, setScores] = useState<Score[]>([]);
