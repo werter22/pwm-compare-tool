@@ -1,73 +1,111 @@
-# React + TypeScript + Vite
+# PWM Compare Tool (Prototype)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Nachweisbasierter Password-Manager-Vergleich mit **Wizard (Gewichtung + KO)**, **Ranking**, **Compare** und **Product Detail**.
 
-Currently, two official plugins are available:
+- **Scores** sind read-only und werden pro Subkriterium mit **Audit-Kommentar** & **Evidence-Links** begründet.
+- **Wizard** führt optional durch **Startgewichtung → Feintuning (KO/Relevant) → Zusammenfassung (Slider 0–10)**.
+- **Draft-Mode**: Änderungen wirken erst nach **„Einstellungen übernehmen“**.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## React Compiler
+## Demo (GitHub Pages)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Live Prototype:** https://werter22.github.io/pwm-compare-tool/#/wizard
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Was dieses Tool löst
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+Viele Vergleiche sind Bauchgefühl oder Marketing. Dieses Tool setzt auf:
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+- **Transparenz:** jeder Score hat Begründung + Quellen
+- **Kontrolle:** du bestimmst Relevanz, Gewichte und KO-Kriterien
+- **Progressive Disclosure:** Anfänger nutzen den **Fragebogen** für eine personalisierte Empfehlung, Feintuning/Slider sind optional für Fortgeschrittene
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+---
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## How to use (in 60 Sekunden)
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### 1) Vanilla Start (ohne Wizard)
+- Öffne **Ranking**
+- Standardmäßig sind alle Subkriterien **gleich gewichtet** (neutral)
+- Vergleiche Produkte, öffne Details, nutze Compare
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+### 2) Wizard (optional, empfohlen)
+Der Wizard ist in **3 optionale Schritte** gegliedert:
+
+1. **Fragebogen** – setzt eine sinnvolle Startgewichtung  
+2. **Feintuning** – KO & Relevanz für Themenblöcke (Rails)  
+3. **Zusammenfassung** – komplette Übersicht: Domain → Kriterium → Subkriterium + Slider (0–10)
+
+> Du kannst jeden Schritt überspringen. Wenn alles übersprungen wird, bleibt alles **neutral**.
+
+---
+
+## Features
+
+### Wizard (Draft-Mode / Reset-Logik)
+- **Reset** = alles neutral / blank
+- **Entwurf**: Änderungen im Wizard sind zunächst Vorschau
+- Erst **„Einstellungen übernehmen“** speichert und beeinflusst Ranking/Compare
+
+### KO-Kriterien
+- KO = „hartes Muss“
+- Wenn ein Subkriterium als KO markiert ist und `score < ko_threshold` → **KO-Verstoß**
+- KO hilft, Tools auszuschließen, die kritische Mindestanforderungen nicht erfüllen
+
+### Compare & Product Detail
+- **Kompakt** ist Default (Gewicht-Pill nur im Non-Compact Modus)
+- Audit-Kommentare sind **expand/collapse**
+- **Domain-Themes** helfen beim Scannen
+
+---
+
+## Datenmodell
+
+### Tree
+**Domains → Criteria → Subcriteria**
+
+Subcriteria enthalten:
+- Scores je Produkt: `0 | 1 | 2`
+- `audit_comment`
+- `evidence_links[]`
+- `short_desc`
+
+### Preferences (pro Subcriterion)
+- `relevance_level`: `muss | sollte | kann | nicht_relevant`
+- `weight`: `0..10`
+- `is_ko`: boolean
+- `ko_threshold`: number (z.B. 2)
+
+---
+
+## Scoring (High-Level)
+
+- Ein Subkriterium hat `score ∈ {0,1,2}`
+- `weight` (0–10) skaliert den Einfluss auf den Gesamtscore
+- `weight = 0` bedeutet: zählt nicht in die Gewichtung  
+  (KO kann trotzdem aktiv bleiben, falls gesetzt)
+
+> Das exakte Verhalten bei KO (Ausschluss vs. harte Abwertung) hängt von der Ranking-Implementierung ab.
+
+---
+
+## Tech Stack
+
+- React 19 + TypeScript (strict)
+- Vite
+- React Router (`react-router-dom`)
+- ESLint
+
+---
+
+## Local Development
+
+### Voraussetzungen
+- Node.js >= 18 empfohlen
+- npm (oder kompatibler Package Manager)
+
+### Install
+```bash
+npm install
