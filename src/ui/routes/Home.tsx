@@ -29,7 +29,6 @@ export default function Home() {
         <PageHeader
           title="Passwortmanager vergleichen"
           subtitle="Nachweisbasierte Scores (read-only). Du steuerst Relevanz, Gewichte und KO-Kriterien – und siehst, wie sich das Ranking verändert."
-          right={<Badge tone="neutral">Prototyp</Badge>}
         />
 
         {/* Primary entry cards */}
@@ -86,9 +85,6 @@ export default function Home() {
 
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: "var(--s-3)" }}>
               <LinkButton to="/wizard">Wizard starten</LinkButton>
-              <LinkButton to="/ranking" variant="secondary">
-                Ranking ansehen
-              </LinkButton>
             </div>
 
             <div style={{ marginTop: 6, color: "var(--text-muted)", fontSize: 13 }}>
@@ -101,7 +97,6 @@ export default function Home() {
               <h2 style={{ margin: 0, fontSize: 20, letterSpacing: "-0.01em" }}>
                 Direkt loslegen
               </h2>
-              <Badge tone="neutral">Für Profis</Badge>
             </div>
 
             <div style={{ color: "var(--text-muted)", lineHeight: 1.5 }}>
@@ -110,9 +105,6 @@ export default function Home() {
 
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <LinkButton to="/ranking">Zum Ranking</LinkButton>
-              <LinkButton to="/compare" variant="secondary">
-                Vergleich öffnen
-              </LinkButton>
             </div>
 
             <Card

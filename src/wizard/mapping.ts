@@ -8,9 +8,7 @@ export type RailConfigItem = {
   subcriterion_ids: string[];
 };
 
-type Patch = Partial<Pick<Preference, "relevance_level" | "weight" | "is_ko" | "ko_threshold">>;
-
-const KO_THRESHOLD_DEFAULT: 1 | 2 = 2;
+type Patch = Partial<Pick<Preference, "relevance_level" | "weight">>;
 
 /**
  * IDs kommen config-basiert aus rails.config.json (wird im Wizard geladen).
@@ -44,9 +42,13 @@ function applyPatch(prefs: Preference[], ids: string[], patch: Patch): Preferenc
 function applyDomainMultiplier(prefs: Preference[], ids: string[], factor: number): Preference[] {
   if (ids.length === 0) return prefs;
   const idSet = new Set(ids);
+
   return prefs.map((p) => {
     if (!idSet.has(p.subcriterion_id)) return p;
+
+    // Wenn bereits "nicht relevant", nichts hochziehen
     if (p.relevance_level === "nicht_relevant") return p;
+
     const w = Math.round((p.weight ?? 0) * factor);
     return { ...p, weight: Math.max(0, Math.min(10, w)) };
   });
@@ -63,6 +65,8 @@ export function applyWizardAnswers(args: {
   rails: RailConfigItem[];
 }): { next: Preference[]; summary: string[] } {
   const { tree, preferences, answers, rails } = args;
+
+  // Wizard ist reine Startgewichtung (soft). KO wird im Feintuning gesetzt.
   let next = [...preferences];
   const summary: string[] = [];
 
@@ -101,7 +105,7 @@ export function applyWizardAnswers(args: {
     summary.push("Kostenfokus: Balance.");
   }
 
-  // 3) Leitplanken: konkrete Themen (KO / Muss / Sollte)
+  // 3) Leitplanken: konkrete Themen (nur Priorisierung, KEIN KO)
   const selfHostIds = idsForRailKey(tree, rails, "self_hosting");
   const ssoIds = idsForRailKey(tree, rails, "sso");
   const dataIds = idsForRailKey(tree, rails, "data_residency");
@@ -112,62 +116,47 @@ export function applyWizardAnswers(args: {
   const cryptoIds = idsForRailKey(tree, rails, "crypto_zk");
   const exitIds = idsForRailKey(tree, rails, "export_exit");
 
-  // Self-Hosting
+  // Self-Hosting: "zwingend" wird als sehr starkes Muss priorisiert (KO optional im Feintuning)
   if (answers.hosting === "self_host_ko") {
-    next = applyPatch(next, selfHostIds, {
-      relevance_level: "muss",
-      weight: 10,
-      is_ko: true,
-      ko_threshold: KO_THRESHOLD_DEFAULT,
-    });
+    next = applyPatch(next, selfHostIds, { relevance_level: "muss", weight: 10 });
     noteIfMissing(
       summary,
       selfHostIds,
-      "Zwingend (KO): Self-Hosting muss möglich sein.",
-      "Self-Hosting KO: (kein Mapping gefunden in rails.config.json)."
+      "Self-Hosting: als Muss priorisiert (KO optional im Feintuning).",
+      "Self-Hosting: (kein Mapping gefunden in rails.config.json)."
     );
   } else if (answers.hosting === "self_host_nice") {
-    next = applyPatch(next, selfHostIds, { relevance_level: "sollte", weight: 6, is_ko: false });
+    next = applyPatch(next, selfHostIds, { relevance_level: "sollte", weight: 6 });
     noteIfMissing(
       summary,
       selfHostIds,
-      "Self-Hosting: als wichtig markiert (kein KO).",
+      "Self-Hosting: als wichtig markiert.",
       "Self-Hosting: (kein Mapping gefunden in rails.config.json)."
     );
   }
 
-  // SSO
+  // SSO: "zwingend" wird als Muss priorisiert (KO optional im Feintuning)
   if (answers.sso === "zwingend") {
-    next = applyPatch(next, ssoIds, {
-      relevance_level: "muss",
-      weight: 9,
-      is_ko: true,
-      ko_threshold: KO_THRESHOLD_DEFAULT,
-    });
-    noteIfMissing(summary, ssoIds, "Zwingend (KO): SSO ist erforderlich.", "SSO KO: (kein Mapping gefunden).");
+    next = applyPatch(next, ssoIds, { relevance_level: "muss", weight: 9 });
+    noteIfMissing(summary, ssoIds, "SSO: als Muss priorisiert (KO optional im Feintuning).", "SSO: (kein Mapping gefunden).");
   } else if (answers.sso === "gut") {
-    next = applyPatch(next, ssoIds, { relevance_level: "sollte", weight: 6, is_ko: false });
-    noteIfMissing(summary, ssoIds, "SSO: wichtig (kein KO).", "SSO: (kein Mapping gefunden).");
+    next = applyPatch(next, ssoIds, { relevance_level: "sollte", weight: 6 });
+    noteIfMissing(summary, ssoIds, "SSO: wichtig.", "SSO: (kein Mapping gefunden).");
   }
 
   // Datenstandort / Jurisdiktion
   if (answers.dataResidency === "ch") {
-    next = applyPatch(next, dataIds, {
-      relevance_level: "muss",
-      weight: 9,
-      is_ko: true,
-      ko_threshold: KO_THRESHOLD_DEFAULT,
-    });
-    noteIfMissing(summary, dataIds, "Zwingend (KO): Datenstandort Schweiz (CH).", "Datenstandort CH: (kein Mapping gefunden).");
+    next = applyPatch(next, dataIds, { relevance_level: "muss", weight: 9 });
+    noteIfMissing(summary, dataIds, "Datenstandort: CH als Muss priorisiert (KO optional im Feintuning).", "Datenstandort CH: (kein Mapping gefunden).");
   } else if (answers.dataResidency === "ch_eu") {
-    next = applyPatch(next, dataIds, { relevance_level: "muss", weight: 8, is_ko: false });
+    next = applyPatch(next, dataIds, { relevance_level: "muss", weight: 8 });
     noteIfMissing(summary, dataIds, "Datenstandort: CH/EU stark gewichtet.", "Datenstandort CH/EU: (kein Mapping gefunden).");
   } else if (answers.dataResidency === "eu") {
-    next = applyPatch(next, dataIds, { relevance_level: "sollte", weight: 6, is_ko: false });
+    next = applyPatch(next, dataIds, { relevance_level: "sollte", weight: 6 });
     noteIfMissing(summary, dataIds, "Datenstandort: EU wichtig.", "Datenstandort EU: (kein Mapping gefunden).");
   }
 
-  // Teamgroesse → SCIM/Provisioning + RBAC
+  // Teamgröße → SCIM/Provisioning + RBAC
   if (answers.teamSize === "gt200") {
     next = applyPatch(next, scimIds, { relevance_level: "muss", weight: 8 });
     next = applyPatch(next, rbacIds, { relevance_level: "muss", weight: 8 });

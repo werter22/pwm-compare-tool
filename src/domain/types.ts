@@ -4,15 +4,12 @@ export type RelevanceLevel = "muss" | "sollte" | "kann" | "nicht_relevant";
 export interface Product {
   id: string;
   name: string;
-  description?: string;
   logoUrl?: string;
 }
 
 export interface EvidenceLink {
   label: string;
   url: string;
-  type?: "audit" | "dpa" | "whitepaper" | "doc" | "other";
-  date?: string; // optional
 }
 
 export interface Score {
