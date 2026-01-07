@@ -11,8 +11,7 @@
             {
               "id": "s_d1_4_1_1",
               "name": "E2E/Zero-Knowledge & Threat-Model",
-              "short_desc": "Doku einfordern (Whitepaper, Threat-Model). 2. E2E-Nachweis prüfen (Client-Keys, Traffic-Check). 3. Angriffsannahmen abgleichen (Szenarien).",
-              "chapter_ref": "4.1.1"
+              "short_desc": "Doku einfordern (Whitepaper, Threat-Model). 2. E2E-Nachweis prüfen (Client-Keys, Traffic-Check). 3. Angriffsannahmen abgleichen (Szenarien)."
             },
             {
               "id": "s_d1_3_1_kryptodesign_kdf_aead_ag_5948081d",
@@ -43,8 +42,7 @@
             {
               "id": "s_d1_4_1_2",
               "name": "Secure SDLC",
-              "short_desc": "Nachweise einfordern (Policies, Threat-Modeling, SAST/DAST, Reviews, SLAs). 2. Mapping gegen NIST SSDF/OWASP SAMM.",
-              "chapter_ref": "4.1.2"
+              "short_desc": "Nachweise einfordern (Policies, Threat-Modeling, SAST/DAST, Reviews, SLAs). 2. Mapping gegen NIST SSDF/OWASP SAMM."
             },
             {
               "id": "s_d1_3_2_bug_bounty_vulnerability_4dd75d56",
@@ -75,8 +73,7 @@
             {
               "id": "s_d1_4_1_3",
               "name": "ISO/IEC 27001",
-              "short_desc": "Zertifikat einfordern (Akkreditierung, Scope/SoA, Gültigkeit). 2. Scope prüfen (Cloud-Betrieb/Produkt-Teams?). 3. Ergänzende Normen (27017/27018) prüfen.",
-              "chapter_ref": "4.1.3"
+              "short_desc": "Zertifikat einfordern (Akkreditierung, Scope/SoA, Gültigkeit). 2. Scope prüfen (Cloud-Betrieb/Produkt-Teams?). 3. Ergänzende Normen (27017/27018) prüfen."
             },
             {
               "id": "s_d1_3_3_soc_2_typ_ii_d96607a9",
@@ -107,8 +104,7 @@
             {
               "id": "s_d1_4_1_4",
               "name": "Frühere Sicherheitsvorfälle / Breaches",
-              "short_desc": "Öffentliche Advisories/Reports, Medien, CVE-Daten, Forensik-Berichte prüfen. 2. Schweregrad, Muster, Zeit seit Vorfall, Gegenmassnahmen bewerten.",
-              "chapter_ref": "4.1.4"
+              "short_desc": "Öffentliche Advisories/Reports, Medien, CVE-Daten, Forensik-Berichte prüfen. 2. Schweregrad, Muster, Zeit seit Vorfall, Gegenmassnahmen bewerten."
             },
             {
               "id": "s_d1_3_4_reaktionsfaehigkeit_inci_2c754a90",
@@ -134,8 +130,7 @@
             {
               "id": "s_d1_4_1_5",
               "name": "Dark-Web-Leaks & Funde",
-              "short_desc": "Threat-Intel-Recherche (Anbietername, Domainmuster, Vault-Signaturen). 2. Kreuzcheck mit Advisories. 3. Stichproben (Daten plausibilisieren).",
-              "chapter_ref": "4.1.5"
+              "short_desc": "Threat-Intel-Recherche (Anbietername, Domainmuster, Vault-Signaturen). 2. Kreuzcheck mit Advisories. 3. Stichproben (Daten plausibilisieren)."
             },
             {
               "id": "s_d1_3_5_advisories_und_incident__676927c9",
@@ -156,8 +151,7 @@
             {
               "id": "s_d1_4_1_6",
               "name": "Open-Source",
-              "short_desc": "Repos prüfen (Server/Clients offen, Lizenz). 2. Build-Integrität (Signierte Releases, reproducible Builds). 3. Release-Prozess (Versionierung, Security-Notes). 4. Community-Health.",
-              "chapter_ref": "4.1.6"
+              "short_desc": "Repos prüfen (Server/Clients offen, Lizenz). 2. Build-Integrität (Signierte Releases, reproducible Builds). 3. Release-Prozess (Versionierung, Security-Notes). 4. Community-Health."
             }
           ]
         }
@@ -174,8 +168,7 @@
             {
               "id": "s_d2_4_2_1",
               "name": "Dokumentation / Subprozessoren",
-              "short_desc": "DPA + Subprozessorliste + Speicherorte anfordern",
-              "chapter_ref": "4.2.1"
+              "short_desc": "DPA + Subprozessorliste + Speicherorte anfordern"
             },
             {
               "id": "s_d2_datenresiden_datenfluss_und_support_d_c9ffb986",
@@ -201,8 +194,7 @@
             {
               "id": "s_d2_4_2_2",
               "name": "SBOM-Transparenz",
-              "short_desc": "SBOM oder Komponentenliste prüfen",
-              "chapter_ref": "4.2.2"
+              "short_desc": "SBOM oder Komponentenliste prüfen"
             },
             {
               "id": "s_d2_supply_chain_build_und_release_integr_dfacc15b",
@@ -223,8 +215,7 @@
             {
               "id": "s_d2_4_2_3",
               "name": "Rechts- & Hostingstruktur",
-              "short_desc": "Unternehmenssitz, Hostingstandorte & CLOUDACT-Risiko prüfen",
-              "chapter_ref": "4.2.3"
+              "short_desc": "Unternehmenssitz, Hostingstandorte & CLOUDACT-Risiko prüfen"
             },
             {
               "id": "s_d2_geopolitisch_behoerdenzugriffe_8ec1932d",
@@ -245,8 +236,7 @@
             {
               "id": "s_d2_4_2_4",
               "name": "Eigentümerstruktur",
-              "short_desc": "Eigentümer- & Managementstruktur prüfen",
-              "chapter_ref": "4.2.4"
+              "short_desc": "Eigentümer- & Managementstruktur prüfen"
             },
             {
               "id": "s_d2_eigentum_und_change_of_control_9cece724",
@@ -267,8 +257,7 @@
             {
               "id": "s_d2_4_2_5",
               "name": "Kostenbestandteile",
-              "short_desc": "Preislisten, Feature-Kosten & Consulting erfassen",
-              "chapter_ref": "4.2.5"
+              "short_desc": "Preislisten, Feature-Kosten & Consulting erfassen"
             },
             {
               "id": "s_d2_total_cost_o_betrachtungszeitraum_e0ce8a0c",
@@ -289,8 +278,7 @@
             {
               "id": "s_d2_4_2_6",
               "name": "Exportfähigkeit",
-              "short_desc": "Export von Secrets & Metadaten testen",
-              "chapter_ref": "4.2.6"
+              "short_desc": "Export von Secrets & Metadaten testen"
             },
             {
               "id": "s_d2_vendor_lock__api_offenheit_c3596abb",
@@ -322,8 +310,7 @@
             {
               "id": "s_d3_4_3_1",
               "name": "UX-Heuristik-Evaluation",
-              "short_desc": "Anwendung von Nielsen's 10 Usability-Heuristiken zur Bewertung der Benutzeroberfläche",
-              "chapter_ref": "4.3.1"
+              "short_desc": "Anwendung von Nielsen's 10 Usability-Heuristiken zur Bewertung der Benutzeroberfläche"
             },
             {
               "id": "s_d3_benutzbarkei_cognitive_walkthroughs_56af005c",
@@ -354,8 +341,7 @@
             {
               "id": "s_d3_4_3_2",
               "name": "SSO-Kompatibilitätstest",
-              "short_desc": "Prüfung der Unterstützung von SAML 2.0 und OIDC mit gängigen Identity Providern (Okta, Microsoft Entra ID, Google Workspace)",
-              "chapter_ref": "4.3.2"
+              "short_desc": "Prüfung der Unterstützung von SAML 2.0 und OIDC mit gängigen Identity Providern (Okta, Microsoft Entra ID, Google Workspace)"
             },
             {
               "id": "s_d3_enterprise_f_scim_funktionstest_f7743c7a",
@@ -391,8 +377,7 @@
             {
               "id": "s_d3_4_3_3",
               "name": "IAM/Directory-Integration",
-              "short_desc": "Test der Anbindung an AD, LDAP, Azure AD",
-              "chapter_ref": "4.3.3"
+              "short_desc": "Test der Anbindung an AD, LDAP, Azure AD"
             },
             {
               "id": "s_d3_integration__siem_kompatibilitaet_cadfe9be",
@@ -433,8 +418,7 @@
             {
               "id": "s_d3_4_3_4",
               "name": "Secrets-Management-Test",
-              "short_desc": "Prüfung der Speicherung von SSH-Keys, API-Keys, Zertifikaten, Datenbank-Credentials​",
-              "chapter_ref": "4.3.4"
+              "short_desc": "Prüfung der Speicherung von SSH-Keys, API-Keys, Zertifikaten, Datenbank-Credentials​"
             },
             {
               "id": "s_d3_secrets_pam__session_recording_6158406b",
@@ -470,8 +454,7 @@
             {
               "id": "s_d3_4_3_5",
               "name": "SLA-Dokumentation",
-              "short_desc": "Analyse der vertraglich garantierten Verfügbarkeit",
-              "chapter_ref": "4.3.5"
+              "short_desc": "Analyse der vertraglich garantierten Verfügbarkeit"
             },
             {
               "id": "s_d3_zuverlaessig_status_historie_05aef7c0",
@@ -512,8 +495,7 @@
             {
               "id": "s_d3_4_3_6",
               "name": "Support-SLA-Analyse",
-              "short_desc": "Die vertraglich garantierten Response- und Resolution-Zeiten nach Severity werden analysiert. Standard-SLA-Definitionen umfassen typischerweise: • P1 (Kritisch): System down, Gesch…",
-              "chapter_ref": "4.3.6"
+              "short_desc": "Die vertraglich garantierten Response- und Resolution-Zeiten nach Severity werden analysiert. Standard-SLA-Definitionen umfassen typischerweise: • P1 (Kritisch): System down, Gesch…"
             },
             {
               "id": "s_d3_support_und__sprachunterstuetzung_0028bc75",
@@ -554,8 +536,7 @@
             {
               "id": "s_d3_4_3_7",
               "name": "Schulungsmaterial-Analyse",
-              "short_desc": "Qualität und Umfang von Trainingsvideos, Webinaren, Handbüchern",
-              "chapter_ref": "4.3.7"
+              "short_desc": "Qualität und Umfang von Trainingsvideos, Webinaren, Handbüchern"
             },
             {
               "id": "s_d3_adoptions_un_change_management_ressou_338e008b",
@@ -586,8 +567,7 @@
             {
               "id": "s_d3_4_3_8",
               "name": "Roadmap-Analyse",
-              "short_desc": "Prüfung der öffentlichen Roadmap auf Detailgrad und Zeitrahmen",
-              "chapter_ref": "4.3.8"
+              "short_desc": "Prüfung der öffentlichen Roadmap auf Detailgrad und Zeitrahmen"
             },
             {
               "id": "s_d3_roadmap_und__release_frequenz_821d02cf",
@@ -628,8 +608,7 @@
             {
               "id": "s_d3_4_3_9",
               "name": "Financial Reports",
-              "short_desc": "Analyse öffentlich verfügbarer Finanzdaten (bei börsennotierten oder Private-Equity-backed Companies)",
-              "chapter_ref": "4.3.9"
+              "short_desc": "Analyse öffentlich verfügbarer Finanzdaten (bei börsennotierten oder Private-Equity-backed Companies)"
             },
             {
               "id": "s_d3_finanzielle__funding_history_79c9d9b7",

@@ -6,8 +6,8 @@ const LS_APPLIED_KEY = "pwm_compare_preferences_applied_v1";
 // Vanilla-Baseline (gleichgewichtet, keine KO).
 // Wichtig: Diese Defaults dürfen NICHT automatisch in LocalStorage geschrieben werden.
 const DEFAULT_WEIGHT: Record<RelevanceLevel, number> = {
-  muss: 5,
-  sollte: 3,
+  muss: 10,
+  sollte: 5,
   kann: 1,
   nicht_relevant: 0,
 };

@@ -70,27 +70,26 @@ def split_evidence(raw: Any) -> List[str]:
     return [p.strip() for p in parts if p.strip()]
 
 
-def parse_evidence_links(evid_raw: Any, fundstelle: Any = None) -> List[Dict[str, str]]:
+def parse_evidence_links(evid_raw: Any, evidenz_typ: Any = None) -> List[Dict[str, str]]:
     parts = split_evidence(evid_raw)
-    fund = "" if is_empty(fundstelle) else str(fundstelle).strip()
+    if not parts:
+        return []
+
+    typ = "" if is_empty(evidenz_typ) else norm_text(str(evidenz_typ))
 
     links: List[Dict[str, str]] = []
-    for p in parts:
+    for i, p in enumerate(parts, start=1):
         m = re.search(r"(https?://\S+)", p)
-        if m:
-            url = m.group(1).rstrip(").,")
-            label = p.replace(url, "").strip(" :-–—\t")
-            if not label:
-                label = "Quelle"
-            if fund:
-                label = f"{label} – {fund}"
-            links.append({"label": label, "url": url})
-        else:
-            label = p
-            if fund:
-                label = f"{label} – {fund}"
-            links.append({"label": label, "url": ""})
+        url = m.group(1).rstrip(").,") if m else ""
+
+        label = f"Quelle {i}"
+        if typ:
+            label = f"{label} – {typ}"
+
+        links.append({"label": label, "url": url})
+
     return links
+
 
 
 # -----------------------------
@@ -310,7 +309,7 @@ def parse_product_scores(ws_product, template_items: List[RowItem], product_id: 
     col_score = find_col(cols, "scoring", "score", "bewertung")
     col_comment = find_col(cols, "kommentar", "kurzbefund", "comment")
     col_evid = find_col(cols, "evidenz", "quelle", "source", "link")
-    col_fund = find_col(cols, "fundstelle")
+    col_evid_typ = find_col(cols, "evidenz-typ", "evidenz typ", "evidenztyp", "evidence typ")
 
     col_sub = find_col(cols, "unterkriterium")
 
@@ -371,8 +370,8 @@ def parse_product_scores(ws_product, template_items: List[RowItem], product_id: 
                 comment = norm_text(str(v))
 
         evid = ws_product.cell(r, col_evid).value if col_evid else None
-        fund = ws_product.cell(r, col_fund).value if col_fund else None
-        evidenz_links = parse_evidence_links(evid, fund)
+        evid_typ = ws_product.cell(r, col_evid_typ).value if col_evid_typ else None
+        evidenz_links = parse_evidence_links(evid, evid_typ)
 
         out.append(
             {

@@ -2,55 +2,46 @@
   {
     "id": "google",
     "name": "Google",
-    "description": "",
     "logoUrl": "logos/google.svg"
   },
   {
     "id": "edge",
     "name": "Edge",
-    "description": "",
     "logoUrl": "logos/edge.svg"
   },
   {
     "id": "firefox",
     "name": "Firefox",
-    "description": "",
     "logoUrl": "logos/firefox.svg"
   },
   {
     "id": "bitwarden",
     "name": "Bitwarden",
-    "description": "",
     "logoUrl": "logos/bitwarden.svg"
   },
   {
     "id": "dashlane",
     "name": "Dashlane",
-    "description": "",
     "logoUrl": "logos/dashlane.svg"
   },
   {
     "id": "1password",
     "name": "1Password",
-    "description": "",
     "logoUrl": "logos/1password.svg"
   },
   {
     "id": "keepassxc",
     "name": "KeePassXC",
-    "description": "",
     "logoUrl": "logos/keepassxc.svg"
   },
   {
     "id": "roboform",
     "name": "RoboForm",
-    "description": "",
     "logoUrl": "logos/roboform.svg"
   },
   {
     "id": "bitdefender",
     "name": "Bitdefender",
-    "description": "",
     "logoUrl": "logos/bitdefender.svg"
   }
 ]
