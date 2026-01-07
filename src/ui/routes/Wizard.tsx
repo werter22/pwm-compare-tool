@@ -12,7 +12,12 @@ import { domainTheme } from "../styles/domainTheme";
 
 import { getTree, getRailsConfig } from "../../api/repo";
 import type { Preference, RelevanceLevel, Tree } from "../../domain/types";
-import { ensurePreferencesForTree, loadPreferences, savePreferences, clearPreferences } from "../../state/preferences";
+import {
+  ensurePreferencesForTree,
+  loadPreferences,
+  savePreferences,
+  clearPreferences,
+} from "../../state/preferences";
 
 import type { WizardAnswers } from "../../wizard/questions";
 import { QUESTIONS } from "../../wizard/questions";
@@ -34,6 +39,8 @@ const AUTO_WEIGHT: Record<RelevanceLevel, number> = {
   nicht_relevant: 0,
 };
 
+const KO_THRESHOLD_DEFAULT: 1 | 2 = 2;
+
 function isCompleteAnswers(a: Partial<WizardAnswers>): a is WizardAnswers {
   return QUESTIONS.every((q) => a[q.id] != null);
 }
@@ -47,6 +54,32 @@ function patchPrefsForSubIds(
   return prefs.map((p) => (set.has(p.subcriterion_id) ? { ...p, ...patch } : p));
 }
 
+/**
+ * WICHTIG: zentrale Normalisierung, damit KO nie "inkonsistent" ist.
+ * - is_ko => relevance_level=muss, weight=10
+ * - nicht_relevant => weight=0, is_ko=false, threshold reset
+ */
+function normalizePrefs(prefs: Preference[]): Preference[] {
+  return prefs.map((p) => {
+    if (p.relevance_level === "nicht_relevant") {
+      return { ...p, weight: 0, is_ko: false, ko_threshold: KO_THRESHOLD_DEFAULT };
+    }
+    if (p.is_ko) {
+      return {
+        ...p,
+        is_ko: true,
+        relevance_level: "muss",
+        weight: 10,
+        ko_threshold: ((p.ko_threshold ?? KO_THRESHOLD_DEFAULT) as 1 | 2),
+      };
+    }
+    return {
+      ...p,
+      ko_threshold: ((p.ko_threshold ?? KO_THRESHOLD_DEFAULT) as 1 | 2),
+    };
+  });
+}
+
 function railState(prefs: Preference[], ids: string[]) {
   const set = new Set(ids);
   const items = prefs.filter((p) => set.has(p.subcriterion_id));
@@ -55,7 +88,7 @@ function railState(prefs: Preference[], ids: string[]) {
     return {
       relevance_level: "nicht_relevant" as const,
       is_ko: false,
-      ko_threshold: 2 as 1 | 2,
+      ko_threshold: KO_THRESHOLD_DEFAULT as 1 | 2,
       rel_mixed: true,
       ko_mixed: true,
       thr_mixed: true,
@@ -65,11 +98,11 @@ function railState(prefs: Preference[], ids: string[]) {
 
   const rel = items[0].relevance_level;
   const ko = !!items[0].is_ko;
-  const thr = ((items[0].ko_threshold ?? 2) as 1 | 2);
+  const thr = ((items[0].ko_threshold ?? KO_THRESHOLD_DEFAULT) as 1 | 2);
 
   const rel_mixed = items.some((x) => x.relevance_level !== rel);
   const ko_mixed = items.some((x) => !!x.is_ko !== ko);
-  const thr_mixed = items.some((x) => ((x.ko_threshold ?? 2) as 1 | 2) !== thr);
+  const thr_mixed = items.some((x) => ((x.ko_threshold ?? KO_THRESHOLD_DEFAULT) as 1 | 2) !== thr);
 
   return {
     relevance_level: rel,
@@ -82,10 +115,8 @@ function railState(prefs: Preference[], ids: string[]) {
   };
 }
 
-
 function ScrollToTopFab(props: { visible: boolean }) {
   const { visible } = props;
-
   if (!visible) return null;
 
   return (
@@ -143,6 +174,7 @@ function WizardTabs(props: {
       {items.map((it) => {
         const isActive = active === it.id;
         const isDisabled = !!disabled?.[it.id];
+
         return (
           <button
             key={it.id}
@@ -154,7 +186,7 @@ function WizardTabs(props: {
               padding: "12px 14px",
               borderRadius: "var(--r-lg)",
               border: isActive ? "1px solid var(--accent)" : "1px solid var(--surface-border)",
-              background: isActive ? "var(--surface)" : "var(--surface)",
+              background: "var(--surface)",
               cursor: isDisabled ? "not-allowed" : "pointer",
               opacity: isDisabled ? 0.5 : 1,
               boxShadow: isActive ? "0 0 0 2px rgba(0,0,0,0.02)" : undefined,
@@ -193,9 +225,7 @@ function FeintuningStep(props: {
 
   const KO_HELP =
     "KO = hartes Muss. Wenn der Score unter dem Mindestscore liegt, gilt das Produkt als KO-Verstoß (Ausschluss).";
-
-  const THRESH_HELP =
-    'Streng = Mindestscore 2 ("Stark"). Flexibel = Mindestscore 1 ("Ausreichend").';
+  const THRESH_HELP = 'Streng = Mindestscore 2 ("Stark"). Flexibel = Mindestscore 1 ("Ausreichend").';
 
   const pillSelectStyle: React.CSSProperties = {
     padding: "8px 12px",
@@ -205,6 +235,12 @@ function FeintuningStep(props: {
     color: "var(--text)",
     fontWeight: 800,
     outline: "none",
+  };
+
+  const pillSelectStyleDisabled: React.CSSProperties = {
+    ...pillSelectStyle,
+    opacity: 0.6,
+    cursor: "not-allowed",
   };
 
   return (
@@ -271,10 +307,7 @@ function FeintuningStep(props: {
         filteredRails.map((r) => {
           const st = railState(draftPrefs, r.subcriterion_ids);
 
-          // Threshold ist nur sinnvoll wenn KO aktiv und nicht "nicht relevant"
           const thresholdEnabled = st.is_ko && st.relevance_level !== "nicht_relevant";
-
-          // Relevanz ist "gelockt", sobald KO aktiv ist (damit KO = Muss konsistent bleibt)
           const relevanceLocked = st.is_ko && st.relevance_level !== "nicht_relevant";
 
           return (
@@ -306,13 +339,17 @@ function FeintuningStep(props: {
                   <div style={{ marginTop: 6, color: "var(--text-muted)", fontSize: 13 }}>{r.helper}</div>
                 </div>
 
+                {/* Controls – "pill" look, kein Layout-Shift */}
                 <div
                   style={{
-                    display: "flex",
+                    display: "grid",
+                    gridAutoFlow: "column",
+                    gridAutoColumns: "max-content",
                     gap: 12,
-                    alignItems: "flex-end",
-                    justifyContent: "flex-end",
-                    flexWrap: "wrap",
+                    alignItems: "end",
+                    justifyContent: "end",
+                    width: "100%",
+                    maxWidth: 520,
                   }}
                 >
                   {/* Relevanz */}
@@ -323,7 +360,7 @@ function FeintuningStep(props: {
                       gap: 6,
                       fontSize: 13,
                       color: "var(--text-muted)",
-                      minWidth: 150,
+                      minWidth: 165,
                     }}
                     title={relevanceLocked ? "Relevanz ist gelockt, weil KO aktiv ist (KO = Muss)." : undefined}
                   >
@@ -331,20 +368,15 @@ function FeintuningStep(props: {
                     <select
                       value={st.relevance_level}
                       disabled={relevanceLocked}
-                      style={{
-                        opacity: relevanceLocked ? 0.6 : 1,
-                        cursor: relevanceLocked ? "not-allowed" : "pointer",
-                      }}
                       onChange={(e) => {
                         const relevance_level = e.target.value as RelevanceLevel;
 
-                        // Konsequenz: Nicht relevant => KO aus + Gewicht 0 + Threshold reset
                         if (relevance_level === "nicht_relevant") {
                           const next = patchPrefsForSubIds(draftPrefs, r.subcriterion_ids, {
                             relevance_level: "nicht_relevant",
                             weight: 0,
                             is_ko: false,
-                            ko_threshold: 2,
+                            ko_threshold: KO_THRESHOLD_DEFAULT,
                           });
                           setDraftPrefs(next);
                           setDirty(true);
@@ -357,12 +389,13 @@ function FeintuningStep(props: {
                           relevance_level,
                           weight,
                           is_ko: st.is_ko,
-                          ko_threshold: (st.ko_threshold ?? 2) as 1 | 2,
+                          ko_threshold: (st.ko_threshold ?? KO_THRESHOLD_DEFAULT) as 1 | 2,
                         });
 
                         setDraftPrefs(next);
                         setDirty(true);
                       }}
+                      style={relevanceLocked ? pillSelectStyleDisabled : pillSelectStyle}
                     >
                       <option value="muss">Muss</option>
                       <option value="sollte">Sollte</option>
@@ -392,21 +425,22 @@ function FeintuningStep(props: {
                         onChange={(e) => {
                           const is_ko = e.target.checked;
 
-                          // KO aktiv => Muss + Gewicht 10 (konsequent)
-                          // KO aus => nur is_ko zurücksetzen, Rest bleibt (User kann Relevanz danach bewusst ändern)
-                          const patch = is_ko
-                            ? ({
-                                is_ko: true,
-                                ko_threshold: (st.ko_threshold ?? 2) as 1 | 2,
-                                relevance_level: "muss",
-                                weight: 10,
-                              } as const)
-                            : ({
-                                is_ko: false,
-                                ko_threshold: (st.ko_threshold ?? 2) as 1 | 2,
-                              } as const);
+                          const next = patchPrefsForSubIds(
+                            draftPrefs,
+                            r.subcriterion_ids,
+                            is_ko
+                              ? {
+                                  is_ko: true,
+                                  ko_threshold: (st.ko_threshold ?? KO_THRESHOLD_DEFAULT) as 1 | 2,
+                                  relevance_level: "muss",
+                                  weight: 10,
+                                }
+                              : {
+                                  is_ko: false,
+                                  ko_threshold: (st.ko_threshold ?? KO_THRESHOLD_DEFAULT) as 1 | 2,
+                                }
+                          );
 
-                          const next = patchPrefsForSubIds(draftPrefs, r.subcriterion_ids, patch);
                           setDraftPrefs(next);
                           setDirty(true);
                         }}
@@ -431,7 +465,7 @@ function FeintuningStep(props: {
                     </div>
                   </label>
 
-                  {/* Mindestscore (Pill) – immer Platz reserviert, aber disabled+faded wenn KO aus */}
+                  {/* Mindestscore (Pill) – immer da, aber disabled+faded wenn KO aus */}
                   <label
                     style={{
                       display: "flex",
@@ -446,15 +480,15 @@ function FeintuningStep(props: {
                   >
                     Mindestscore
                     <select
-                      value={String(st.ko_threshold ?? 2)}
+                      value={String(st.ko_threshold ?? KO_THRESHOLD_DEFAULT)}
                       disabled={!thresholdEnabled}
                       onChange={(e) => {
-                        const ko_threshold = ((Number(e.target.value) as 1 | 2) ?? 2) as 1 | 2;
+                        const ko_threshold = ((Number(e.target.value) as 1 | 2) ?? KO_THRESHOLD_DEFAULT) as 1 | 2;
                         const next = patchPrefsForSubIds(draftPrefs, r.subcriterion_ids, { ko_threshold });
                         setDraftPrefs(next);
                         setDirty(true);
                       }}
-                      style={pillSelectStyle}
+                      style={thresholdEnabled ? pillSelectStyle : pillSelectStyleDisabled}
                     >
                       <option value="2">Streng</option>
                       <option value="1">Flexibel</option>
@@ -462,7 +496,9 @@ function FeintuningStep(props: {
                   </label>
 
                   {thresholdEnabled && st.thr_mixed ? (
-                    <span style={{ fontSize: 12, color: "var(--text-muted)" }}>(Mindestscore gemischt)</span>
+                    <span style={{ fontSize: 12, color: "var(--text-muted)", alignSelf: "end" }}>
+                      (Mindestscore gemischt)
+                    </span>
                   ) : null}
                 </div>
               </div>
@@ -474,7 +510,6 @@ function FeintuningStep(props: {
   );
 }
 
-
 type FlatNode = {
   domainId: string;
   domainName: string;
@@ -484,7 +519,6 @@ type FlatNode = {
   subName: string;
   subDesc?: string;
 };
-
 
 function AdvancedSummaryStep(props: {
   tree: Tree;
@@ -514,7 +548,6 @@ function AdvancedSummaryStep(props: {
               ? (s as { helper?: string }).helper
               : undefined);
 
-
           out.push({
             domainId: d.id,
             domainName: d.name,
@@ -524,7 +557,6 @@ function AdvancedSummaryStep(props: {
             subName: s.name,
             subDesc,
           });
-
         }
       }
     }
@@ -553,14 +585,24 @@ function AdvancedSummaryStep(props: {
   };
 
   function setWeight(subId: string, w: number) {
-    const next = draftPrefs.map((p) => (p.subcriterion_id === subId ? { ...p, weight: w } : p));
+    const next = draftPrefs.map((p) => {
+      if (p.subcriterion_id !== subId) return p;
+      if (p.is_ko) return p; // KO: Gewicht ist fix
+      return { ...p, weight: w };
+    });
     setDraftPrefs(next);
     setDirty(true);
   }
-  
-  // Group by domain -> criterion
+
   const domains = useMemo(() => {
-    const byDomain = new Map<string, { domainId: string; domainName: string; criteria: Map<string, { id: string; name: string; subs: FlatNode[] }> }>();
+    const byDomain = new Map<
+      string,
+      {
+        domainId: string;
+        domainName: string;
+        criteria: Map<string, { id: string; name: string; subs: FlatNode[] }>;
+      }
+    >();
 
     for (const n of flat) {
       const p = prefById.get(n.subId);
@@ -577,11 +619,15 @@ function AdvancedSummaryStep(props: {
       d.criteria.get(n.criterionId)!.subs.push(n);
     }
 
-    // preserve tree order
-    const ordered: Array<{ domainId: string; domainName: string; criteria: Array<{ id: string; name: string; subs: FlatNode[] }> }> = [];
+    const ordered: Array<{
+      domainId: string;
+      domainName: string;
+      criteria: Array<{ id: string; name: string; subs: FlatNode[] }>;
+    }> = [];
     for (const d of tree.domains) {
       const g = byDomain.get(d.id);
       if (!g) continue;
+
       const critOrdered: Array<{ id: string; name: string; subs: FlatNode[] }> = [];
       for (const c of d.criteria) {
         const cg = g.criteria.get(c.id);
@@ -590,7 +636,7 @@ function AdvancedSummaryStep(props: {
       if (critOrdered.length) ordered.push({ domainId: d.id, domainName: d.name, criteria: critOrdered });
     }
     return ordered;
-  }, [flat, prefById, onlyKO, normalizedQuery, tree.domains, matches, tree]);
+  }, [flat, prefById, onlyKO, normalizedQuery, tree, matches]);
 
   return (
     <div style={{ display: "grid", gap: 12 }}>
@@ -602,6 +648,9 @@ function AdvancedSummaryStep(props: {
           </div>
           <div style={{ color: "var(--text-muted)", fontSize: 13 }}>
             Hinweis: <strong>0</strong> bedeutet „zählt nicht in die Gewichtung“. KO bleibt aktiv, falls gesetzt.
+          </div>
+          <div style={{ color: "var(--text-muted)", fontSize: 13 }}>
+            KO-Regel: <strong>KO fixiert Gewicht auf 10 (Muss)</strong>.
           </div>
         </div>
       </Card>
@@ -670,9 +719,7 @@ function AdvancedSummaryStep(props: {
                   }}
                 >
                   <div style={{ fontWeight: 950, fontSize: 15 }}>{d.domainName}</div>
-                  <div style={{ color: "var(--text-muted)", fontSize: 12 }}>
-                    Gewichte & KO pro Unterkriterium
-                  </div>
+                  <div style={{ color: "var(--text-muted)", fontSize: 12 }}>Gewichte & KO pro Unterkriterium</div>
                 </div>
 
                 <div style={{ padding: 12, display: "grid", gap: 10 }}>
@@ -705,6 +752,9 @@ function AdvancedSummaryStep(props: {
                           const p = prefById.get(s.subId)!;
                           const base = baselineById.get(s.subId);
                           const isCustom = !!base && p.weight !== base.weight;
+
+                          const isKoLocked = !!p.is_ko;
+                          const shownWeight = isKoLocked ? 10 : p.weight;
 
                           return (
                             <div
@@ -765,7 +815,7 @@ function AdvancedSummaryStep(props: {
                                     <strong>{s.subName}</strong>
                                     {p.is_ko ? <Badge tone="warn">KO</Badge> : null}
                                     {isCustom ? <Badge tone="neutral">Custom</Badge> : null}
-                                    {p.weight === 0 ? <Badge tone="neutral">0</Badge> : null}
+                                    {shownWeight === 0 ? <Badge tone="neutral">0</Badge> : null}
                                   </div>
 
                                   <div style={{ marginTop: 6, color: "var(--text-muted)", fontSize: 12 }}>
@@ -776,34 +826,37 @@ function AdvancedSummaryStep(props: {
                                           color: "var(--text-muted)",
                                           fontSize: 13,
                                           lineHeight: 1.35,
-                                          maxWidth: 400,
+                                          maxWidth: 420,
                                         }}
                                       >
                                         {s.subDesc}
                                       </div>
                                     ) : null}
 
-
-                                    <div style={{ marginTop: 6, color: "var(--text-muted)", fontSize: 12 }}>
+                                    <div style={{ marginTop: 6 }}>
                                       Relevanz: <strong>{p.relevance_level}</strong>
+                                      {isKoLocked ? (
+                                        <span title="KO ist aktiv: Gewicht ist fix auf 10 (Muss).">
+                                          {" "}
+                                          · Gewicht fix (10)
+                                        </span>
+                                      ) : null}
                                     </div>
                                   </div>
                                 </div>
 
-                                <div
-                                  style={{
-                                    display: "flex",
-                                    gap: 10,
-                                    alignItems: "flex-start",
-                                    alignSelf: "flex-start",
-                                    flexWrap: "wrap",
-                                  }}
-                                >
-
+                                <div style={{ display: "flex", gap: 10, alignItems: "flex-start", flexWrap: "wrap" }}>
                                   <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 220 }}>
-                                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "var(--text-muted)" }}>
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        justifyContent: "space-between",
+                                        fontSize: 12,
+                                        color: "var(--text-muted)",
+                                      }}
+                                    >
                                       <span>Gewicht</span>
-                                      <span style={{ fontWeight: 900, color: "var(--text)" }}>{p.weight}</span>
+                                      <span style={{ fontWeight: 900, color: "var(--text)" }}>{shownWeight}</span>
                                     </div>
 
                                     <input
@@ -811,12 +864,18 @@ function AdvancedSummaryStep(props: {
                                       min={0}
                                       max={10}
                                       step={1}
-                                      value={p.weight}
+                                      value={shownWeight}
+                                      disabled={isKoLocked}
                                       onChange={(e) => setWeight(s.subId, Number(e.target.value))}
-                                      style={{ width: 260 }}
+                                      title={
+                                        isKoLocked ? "KO ist aktiv: Gewicht ist fix auf 10 (Muss)." : "Gewicht 0–10 anpassen"
+                                      }
+                                      style={{
+                                        width: 260,
+                                        cursor: isKoLocked ? "not-allowed" : "pointer",
+                                        opacity: isKoLocked ? 0.6 : 1,
+                                      }}
                                     />
-
-
                                   </div>
                                 </div>
                               </div>
@@ -847,6 +906,7 @@ export default function Wizard() {
   // Draft = Arbeit im Wizard (Preview). Commit nur via "Einstellungen übernehmen".
   const [draftPrefs, setDraftPrefs] = useState<Preference[]>([]);
   const [dirty, setDirty] = useState(false);
+
   const [showTopFab, setShowTopFab] = useState(false);
   const [justApplied, setJustApplied] = useState(false);
 
@@ -867,8 +927,10 @@ export default function Wizard() {
       const stored = loadPreferences();
       const ensured = ensurePreferencesForTree(t, stored);
 
-      setPrefs(ensured);
-      setDraftPrefs(ensured);
+      const normalized = normalizePrefs(ensured);
+
+      setPrefs(normalized);
+      setDraftPrefs(normalized);
       setDirty(false);
     }
     load().catch(console.error);
@@ -888,24 +950,19 @@ export default function Wizard() {
       return;
     }
 
-    const onScroll = () => {
-      setShowTopFab(window.scrollY > 600);
-    };
+    const onScroll = () => setShowTopFab(window.scrollY > 600);
 
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, [stage]);
 
-
   const complete = isCompleteAnswers(answers);
 
   const wizardPreview = useMemo(() => {
     if (!tree) return null;
 
-    if (!complete) {
-      return { next: prefs, summary: [] as string[] };
-    }
+    if (!complete) return { next: prefs, summary: [] as string[] };
 
     return applyWizardAnswers({
       tree,
@@ -924,7 +981,7 @@ export default function Wizard() {
     setDirty(false);
 
     clearPreferences();
-    const neutral = tree ? ensurePreferencesForTree(tree, []) : [];
+    const neutral = tree ? normalizePrefs(ensurePreferencesForTree(tree, [])) : [];
     setPrefs(neutral);
     setDraftPrefs(neutral);
   }
@@ -938,22 +995,20 @@ export default function Wizard() {
   }
 
   function skipQuestionnaire() {
-    // Step 1 überspringen, aber im Wizard bleiben (Step 2).
-    // Draft wird auf neutrale/aktuelle prefs gesetzt (keine Questionnaire-Map).
     setStage("feintuning");
-    setDraftPrefs(prefs);
+    setDraftPrefs(normalizePrefs(prefs));
     setDirty(false);
     setSummaryBaseline(null);
   }
 
   function applyDraft() {
-    savePreferences(draftPrefs);
+    const normalized = normalizePrefs(draftPrefs);
+    savePreferences(normalized);
     localStorage.setItem("wizard_completed", "true");
-    setPrefs(draftPrefs);
+    setPrefs(normalized);
+    setDraftPrefs(normalized);
     setDirty(false);
     setJustApplied(true);
-
-    // kleines Feedback, ohne extra Toast-System
     window.setTimeout(() => setJustApplied(false), 1800);
   }
 
@@ -969,8 +1024,8 @@ export default function Wizard() {
     }
 
     if (target === "feintuning") {
-      // Draft = Questionnaire result (oder neutral)
-      setDraftPrefs(wizardPreview.next);
+      const nextDraft = normalizePrefs(wizardPreview.next);
+      setDraftPrefs(nextDraft);
       setDirty((wizardPreview.summary ?? []).length > 0);
       setSummaryBaseline(null);
       setStage("feintuning");
@@ -978,8 +1033,11 @@ export default function Wizard() {
     }
 
     // target === "summary"
-    // Baseline = Snapshot nach Fragebogen + Feintuning
-    setSummaryBaseline(draftPrefs.map((p) => ({ ...p })));
+    const normalizedDraft = normalizePrefs(draftPrefs);
+    setDraftPrefs(normalizedDraft);
+    setDirty(true);
+
+    setSummaryBaseline(normalizedDraft.map((p) => ({ ...p })));
     setStage("summary");
   }
 
@@ -996,10 +1054,8 @@ export default function Wizard() {
   const step = QUESTIONS[stepIdx];
   const cols = step.options.length === 4 ? 4 : 3;
 
-  // Disable clicking "Summary" when not meaningful? (optional) – ich lasse es absichtlich offen (alles optional).
   const disabledTabs: Partial<Record<Stage, boolean>> = {};
 
-  // Right actions: keep "Ohne Wizard fortfahren" safe (top right).
   const rightActions = (
     <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
       {stage === "questions" ? (
@@ -1022,10 +1078,8 @@ export default function Wizard() {
     </div>
   );
 
-
-  // FEINTUNING reset should only reset feintuning changes (to questionnaire baseline)
   function resetFeintuningToQuestionnaireBaseline() {
-    const baseline = wizardPreview?.next ?? prefs;
+    const baseline = normalizePrefs(wizardPreview?.next ?? prefs);
     setDraftPrefs(baseline);
     setDirty((wizardPreview?.summary ?? []).length > 0);
   }
@@ -1045,8 +1099,8 @@ export default function Wizard() {
             stage === "questions"
               ? "Schritt 1 (optional): Fragen beantworten für eine Startgewichtung."
               : stage === "feintuning"
-                ? "Schritt 2 (optional): Feintuning & KO."
-                : "Schritt 3 (optional): Zusammenfassung & finale Gewichte (Slider 0–10)."
+              ? "Schritt 2 (optional): Feintuning & KO."
+              : "Schritt 3 (optional): Zusammenfassung & finale Gewichte (Slider 0–10)."
           }
           right={
             <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" }}>
@@ -1054,7 +1108,6 @@ export default function Wizard() {
               {rightActions}
             </div>
           }
-
         />
 
         <WizardTabs
@@ -1062,13 +1115,9 @@ export default function Wizard() {
           onGo={(s) => {
             if (s === stage) return;
 
-            // Wenn von questions direkt in summary: erst questionnaire-baseline setzen
             if (stage === "questions" && (s === "feintuning" || s === "summary")) {
               goStage("feintuning");
-              if (s === "summary") {
-                // next tick: baseline & stage
-                setTimeout(() => goStage("summary"), 0);
-              }
+              if (s === "summary") setTimeout(() => goStage("summary"), 0);
               return;
             }
 
@@ -1077,7 +1126,6 @@ export default function Wizard() {
               return;
             }
 
-            // von summary zurück
             if (stage === "summary" && s === "feintuning") {
               setSummaryBaseline(null);
               setStage("feintuning");
@@ -1112,14 +1160,12 @@ export default function Wizard() {
                   {step.options.map((opt) => {
                     const selected = answers[step.id] === (opt.value as never);
 
-
                     return (
                       <OptionCard
                         key={String(opt.value)}
                         title={opt.label}
                         description={opt.helper}
                         selected={selected}
-
                         onClick={() => setAnswers((a) => ({ ...a, [step.id]: opt.value as never }))}
                       />
                     );
@@ -1162,7 +1208,6 @@ export default function Wizard() {
         {stage === "feintuning" ? (
           <div style={{ marginTop: "var(--s-5)" }}>
             <Card>
-              {/* Buttons TOP (wie gewünscht) */}
               <div
                 style={{
                   display: "flex",
@@ -1177,7 +1222,11 @@ export default function Wizard() {
                 </Button>
 
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <Button variant="secondary" onClick={resetFeintuningToQuestionnaireBaseline} title="Nur Feintuning zurücksetzen">
+                  <Button
+                    variant="secondary"
+                    onClick={resetFeintuningToQuestionnaireBaseline}
+                    title="Nur Feintuning zurücksetzen"
+                  >
                     Feintuning zuruecksetzen
                   </Button>
                   <Button variant="ghost" onClick={applyDraft} title="Speichert die Einstellungen (bleibt im Wizard)">
@@ -1187,21 +1236,15 @@ export default function Wizard() {
                 </div>
               </div>
 
-              <FeintuningStep
-                rails={rails}
-                draftPrefs={draftPrefs}
-                setDraftPrefs={setDraftPrefs}
-                setDirty={setDirty}
-              />
+              <FeintuningStep rails={rails} draftPrefs={draftPrefs} setDraftPrefs={setDraftPrefs} setDirty={setDirty} />
             </Card>
           </div>
         ) : null}
 
-        {/* SUMMARY / ADVANCED */}
+        {/* SUMMARY */}
         {stage === "summary" ? (
           <div style={{ marginTop: "var(--s-5)" }}>
             <Card>
-              {/* Buttons TOP */}
               <div
                 style={{
                   display: "flex",
@@ -1216,11 +1259,7 @@ export default function Wizard() {
                 </Button>
 
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <Button variant="secondary" onClick={resetSummaryToBaseline} disabled={!summaryBaseline}>
-                    Zusammenfassung zuruecksetzen
-                  </Button>
                   <Button onClick={applyDraft}>Einstellungen uebernehmen</Button>
-
                 </div>
               </div>
 
@@ -1242,6 +1281,7 @@ export default function Wizard() {
           </div>
         ) : null}
       </div>
+
       <ScrollToTopFab visible={stage === "summary" && showTopFab} />
     </Container>
   );

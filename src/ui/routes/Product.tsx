@@ -209,9 +209,6 @@ export default function ProductRoute() {
           subtitle="Details nach Domäne → Kriterium → Unterkriterium. Alle Scores sind nachweisbasiert (read-only)."
           right={
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <Button variant="secondary" onClick={() => nav("/ranking")}>
-                Zurück
-              </Button>
 
               <Button
                 variant={selectedForCompare ? "primary" : "ghost"}
@@ -225,11 +222,9 @@ export default function ProductRoute() {
                 {selectedForCompare ? "Für Vergleich gewählt" : "Vergleichen"}
               </Button>
 
-              {compareIds.length >= 2 && (
-                <Link to="/compare" style={{ textDecoration: "none" }}>
-                  <Button variant="ghost">Vergleich öffnen</Button>
-                </Link>
-              )}
+                <Button variant="primary" onClick={() => nav("/ranking")}>
+                Zurück
+              </Button>
             </div>
           }
         />

@@ -351,7 +351,7 @@ export default function Compare() {
                                   <div key={p.id} style={{ padding: "12px 14px" }}>
                                     <MiniProgress
                                       valuePct={pr.pct}
-                                      label={!compact ? `${pr.sum}/${pr.max}` : undefined}
+                                      label={`${pr.sum}/${pr.max}`}
                                     />
                                   </div>
                                 );
