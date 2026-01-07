@@ -117,7 +117,6 @@ function ProductCardRow({
           <ProductLogo p={p} />
           <div style={{ minWidth: 0 }}>
             <h3 style={{ fontSize: 18, margin: 0 }}>{p.name}</h3>
-            {p.description && <p style={{ marginTop: "var(--s-2)" }}>{p.description}</p>}
           </div>
         </div>
 
