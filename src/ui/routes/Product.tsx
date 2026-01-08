@@ -26,25 +26,24 @@ function formatKoViolation(k: any): string {
   return String(k?.label ?? k?.name ?? k?.subcriterion_id ?? k?.subcriterionId ?? "Unbekannt");
 }
 
+function getKoViolationSubId(k: any): string | undefined {
+  if (!k) return undefined;
+  if (typeof k === "string") return undefined;
+  const id = k?.subcriterion_id ?? k?.subcriterionId ?? k?.id;
+  return typeof id === "string" ? id : undefined;
+}
+
 /** intensive heat color (red -> green) */
 function heatColor(pct01: number) {
   const p = Math.max(0, Math.min(1, avoidNaN(pct01)));
-  // Hue 0 (rot) .. 120 (grün)
-  const hue = 120 * p;
-  // kräftig
+  const hue = 120 * p; // 0 rot .. 120 grün
   return `hsl(${hue} 95% 40%)`;
 }
 function avoidNaN(x: number) {
   return Number.isFinite(x) ? x : 0;
 }
 
-function HeatBar({
-  value,
-  max,
-}: {
-  value: number;
-  max: number;
-}) {
+function HeatBar({ value, max }: { value: number; max: number }) {
   const ratio = max > 0 ? value / max : 0;
   const pct = Math.round(ratio * 100);
 
@@ -54,7 +53,7 @@ function HeatBar({
         style={{
           height: 10,
           borderRadius: "var(--r-pill)",
-          background: "rgba(0,0,0,0.14)", // dunkler als vorher
+          background: "rgba(0,0,0,0.14)",
           border: "1px solid var(--border)",
           overflow: "hidden",
         }}
@@ -76,9 +75,9 @@ type Stat = {
   visibleCount: number;
   sum: number; // sum score (0..2)
   max: number; // 2 * visibleCount
-  criticalCount: number; // score == 0
-  sourcesCount: number; // total evid links count
-  withSourcesCount: number; // how many subcriteria have at least 1 source
+  koViolationsCount: number; // KO violations count (filtered)
+  sourcesCount: number; // total evid links count (filtered)
+  withSourcesCount: number; // how many subcriteria have at least 1 source (filtered)
 };
 
 export default function ProductRoute() {
@@ -91,8 +90,9 @@ export default function ProductRoute() {
   const [prefs, setPrefs] = useState<Preference[]>([]);
   const [compareIds, setCompareIds] = useState<string[]>(loadCompareSelection());
 
-  const [onlyRelevant, setOnlyRelevant] = useState(false);
-  const [onlyCritical, setOnlyCritical] = useState(false);
+  // streamlined filters: Suche + nur KO-Verstöße
+  const [query, setQuery] = useState("");
+  const [onlyKoViolations, setOnlyKoViolations] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -129,29 +129,62 @@ export default function ProductRoute() {
 
   const selectedForCompare = !!(id && compareIds.includes(id));
 
-  // --- helpers: stats on a list of subcriteria ids (filter-aware)
-  const calcStatForSubcriteria = (subcriteria: any[]): Stat => {
+  const totalScore = Math.round(evalForProduct?.total_norm_0_100 ?? 0);
+  const koViolations: any[] = (evalForProduct?.ko_violations ?? []) as any[];
+
+  const koViolationSet = useMemo(() => {
+    const set = new Set<string>();
+    for (const k of koViolations) {
+      const sid = getKoViolationSubId(k);
+      if (sid) set.add(sid);
+    }
+    return set;
+  }, [koViolations]);
+
+  const normalizedQuery = query.trim().toLowerCase();
+
+  const matchesQuery = (domainName: string, criterionName: string, subName: string, subDesc?: string) => {
+    if (!normalizedQuery) return true;
+    const hay = `${domainName} ${criterionName} ${subName} ${subDesc ?? ""}`.toLowerCase();
+    return hay.includes(normalizedQuery);
+  };
+
+  const isVisibleSub = (args: {
+    domainName: string;
+    criterionName: string;
+    subId: string;
+    subName: string;
+    subDesc?: string;
+  }) => {
+    if (onlyKoViolations && !koViolationSet.has(args.subId)) return false;
+    return matchesQuery(args.domainName, args.criterionName, args.subName, args.subDesc);
+  };
+
+  // stats (filter-aware)
+  const calcStatForSubcriteria = (domainName: string, criterionName: string, subcriteria: any[]): Stat => {
     let visibleCount = 0;
     let sum = 0;
     let max = 0;
-    let criticalCount = 0;
+    let koViolationsCount = 0;
     let sourcesCount = 0;
     let withSourcesCount = 0;
 
     for (const sc of subcriteria) {
-      const pref = prefMap.get(sc.id);
-      const rel = pref?.relevance_level ?? "kann";
+      const subId = sc.id as string;
+      const subName = sc.name as string;
+      const subDesc = getShortDesc(sc);
 
-      const scScore = scoreMap.get(sc.id);
-      const score = ((scScore?.score ?? 0) as 0 | 1 | 2) ?? 0;
-
-      if (onlyRelevant && rel === "nicht_relevant") continue;
-      if (onlyCritical && score !== 0) continue;
+      if (!isVisibleSub({ domainName, criterionName, subId, subName, subDesc })) continue;
 
       visibleCount += 1;
+
+      const scScore = scoreMap.get(subId);
+      const score = ((scScore?.score ?? 0) as 0 | 1 | 2) ?? 0;
+
       sum += score;
       max += 2;
-      if (score === 0) criticalCount += 1;
+
+      if (koViolationSet.has(subId)) koViolationsCount += 1;
 
       const evid = (scScore as any)?.evidenz_links ?? (scScore as any)?.evidence_links ?? [];
       const evCount = Array.isArray(evid) ? evid.length : 0;
@@ -159,7 +192,7 @@ export default function ProductRoute() {
       if (evCount > 0) withSourcesCount += 1;
     }
 
-    return { visibleCount, sum, max, criticalCount, sourcesCount, withSourcesCount };
+    return { visibleCount, sum, max, koViolationsCount, sourcesCount, withSourcesCount };
   };
 
   const domainStats = useMemo(() => {
@@ -169,11 +202,10 @@ export default function ProductRoute() {
     for (const d of (tree as any).domains) {
       const allSubs: any[] = [];
       for (const c of d.criteria) for (const sc of c.subcriteria) allSubs.push(sc);
-      m.set(d.id, calcStatForSubcriteria(allSubs));
+      m.set(d.id, calcStatForSubcriteria(d.name, "", allSubs));
     }
     return m;
-  }, [tree, prefMap, scoreMap, onlyRelevant, onlyCritical]); // depends on filter + maps
-
+  }, [tree, scoreMap, koViolationSet, onlyKoViolations, normalizedQuery]);
 
   if (!tree) {
     return (
@@ -198,18 +230,48 @@ export default function ProductRoute() {
     );
   }
 
-  const totalScore = Math.round(evalForProduct?.total_norm_0_100 ?? 0);
-  const koViolations: any[] = (evalForProduct?.ko_violations ?? []) as any[];
+  const productLogo = (product as any)?.logo_url ?? (product as any)?.logoUrl ?? (product as any)?.logo ?? undefined;
+
+  const headerTitle = (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+      {productLogo ? (
+        <img
+          src={String(productLogo)}
+          alt=""
+          style={{
+            width: 34,
+            height: 34,
+            borderRadius: "var(--r-md)",
+            border: "1px solid var(--border)",
+            background: "var(--surface)",
+            objectFit: "contain",
+            flex: "0 0 auto",
+          }}
+        />
+      ) : null}
+
+      <span
+        style={{
+          fontWeight: 900,
+          minWidth: 0,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {product.name}
+      </span>
+    </div>
+  );
 
   return (
     <Container>
       <div style={{ padding: "var(--s-6) 0" }}>
         <PageHeader
-          title={product.name}
+          title={headerTitle as any /* falls PageHeader.title als string typisiert ist */}
           subtitle="Details nach Domäne → Kriterium → Unterkriterium. Alle Scores sind nachweisbasiert (read-only)."
           right={
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-
               <Button
                 variant={selectedForCompare ? "primary" : "ghost"}
                 onClick={() => {
@@ -222,14 +284,14 @@ export default function ProductRoute() {
                 {selectedForCompare ? "Für Vergleich gewählt" : "Vergleichen"}
               </Button>
 
-                <Button variant="primary" onClick={() => nav("/ranking")}>
+              <Button variant="primary" onClick={() => nav("/ranking")}>
                 Zurück
               </Button>
             </div>
           }
         />
 
-        {/* Übersicht: sinnvoll + keine Doppel-Domänen */}
+        {/* Übersicht */}
         <div style={{ marginTop: "var(--s-5)" }}>
           <Card>
             <div
@@ -247,39 +309,37 @@ export default function ProductRoute() {
                 <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                   <Badge tone="neutral">Gesamt: {totalScore} / 100</Badge>
                   {koViolations.length > 0 ? (
-                    <Badge tone="warn">KO-Verstoss: {koViolations.length}</Badge>
+                    <Badge tone="warn">KO-Verstoß: {koViolations.length}</Badge>
                   ) : (
-                    <Badge tone="ok">Kein KO-Verstoss</Badge>
+                    <Badge tone="ok">Kein KO-Verstoß</Badge>
                   )}
                 </div>
-
-                {koViolations.length > 0 && (
-                  <div style={{ marginTop: "var(--s-3)", color: "var(--text-muted)", fontSize: 13 }}>
-                    {koViolations.slice(0, 2).map((k, i) => (
-                      <div key={i}>• fällt durch KO: {formatKoViolation(k)}</div>
-                    ))}
-                    {koViolations.length > 2 ? <div>• …</div> : null}
-                  </div>
-                )}
-              </div>
-
-              <div style={{ display: "grid", gap: 8 }}>
-                <label style={{ display: "flex", gap: 8, alignItems: "center", color: "var(--text-muted)", fontSize: 14 }}>
-                  <input type="checkbox" checked={onlyRelevant} onChange={(e) => setOnlyRelevant(e.target.checked)} />
-                  Nur relevante anzeigen
-                </label>
-                <label style={{ display: "flex", gap: 8, alignItems: "center", color: "var(--text-muted)", fontSize: 14 }}>
-                  <input type="checkbox" checked={onlyCritical} onChange={(e) => setOnlyCritical(e.target.checked)} />
-                  Nur kritische (Score 0)
-                </label>
               </div>
             </div>
 
-            {/* Domain Mini-Übersicht (nur Kacheln, kein Accordion-Duplikat) */}
-            <div style={{ marginTop: "var(--s-4)", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 10 }}>
+            {/* Domain Mini-Übersicht (fixed layout: title pinned, bottom aligned) */}
+            <div
+              style={{
+                marginTop: "var(--s-4)",
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+                gap: 10,
+              }}
+            >
               {(tree as any).domains.map((d: any) => {
                 const th = domainTheme(d.id);
-                const st = domainStats.get(d.id) ?? { visibleCount: 0, sum: 0, max: 0, criticalCount: 0, sourcesCount: 0, withSourcesCount: 0 };
+                const st =
+                  domainStats.get(d.id) ??
+                  ({
+                    visibleCount: 0,
+                    sum: 0,
+                    max: 0,
+                    koViolationsCount: 0,
+                    sourcesCount: 0,
+                    withSourcesCount: 0,
+                  } as Stat);
+
+                const TILE_H = 100;
 
                 return (
                   <div
@@ -296,6 +356,7 @@ export default function ProductRoute() {
                       background: th.tint,
                       position: "relative",
                       overflow: "hidden",
+                      minHeight: TILE_H,
                     }}
                     title="Zum Abschnitt scrollen"
                   >
@@ -309,17 +370,32 @@ export default function ProductRoute() {
                         background: th.accent,
                       }}
                     />
-                    <div style={{ paddingLeft: 8 }}>
-                      <div style={{ fontWeight: 900 }}>{d.name}</div>
-
-                      <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                        <Badge tone={st.criticalCount > 0 ? "warn" : "neutral"}>Kritisch: {st.criticalCount}</Badge>
-                        <Badge tone="neutral">
-                          {st.sum} / {st.max}
-                        </Badge>
+                    <div style={{ paddingLeft: 8, height: TILE_H, display: "flex", flexDirection: "column" }}>
+                      {/* title pinned */}
+                      <div
+                        style={{
+                          fontWeight: 950,
+                          lineHeight: 1.2,
+                          minHeight: 34,
+                          maxHeight: 38,
+                          overflow: "hidden",
+                        }}
+                        title={d.name}
+                      >
+                        {d.name}
                       </div>
 
-                      <HeatBar value={st.sum} max={st.max} />
+                      {/* bottom aligned */}
+                      <div style={{ marginTop: "auto" }}>
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                          {st.koViolationsCount > 0 ? <Badge tone="warn">KO: {st.koViolationsCount}</Badge> : null}
+                          <Badge tone="neutral">
+                            {st.sum} / {st.max}
+                          </Badge>
+                        </div>
+
+                        <HeatBar value={st.sum} max={st.max} />
+                      </div>
                     </div>
                   </div>
                 );
@@ -328,11 +404,20 @@ export default function ProductRoute() {
           </Card>
         </div>
 
-        {/* Domains (nur 1× – hier ist der Deep Dive) */}
+        {/* Domains Deep Dive */}
         <div style={{ marginTop: "var(--s-5)", display: "grid", gap: 12 }}>
           {(tree as any).domains.map((d: any, dIdx: number) => {
             const th = domainTheme(d.id);
-            const st = domainStats.get(d.id) ?? { visibleCount: 0, sum: 0, max: 0, criticalCount: 0, sourcesCount: 0, withSourcesCount: 0 };
+            const st =
+              domainStats.get(d.id) ??
+              ({
+                visibleCount: 0,
+                sum: 0,
+                max: 0,
+                koViolationsCount: 0,
+                sourcesCount: 0,
+                withSourcesCount: 0,
+              } as Stat);
 
             return (
               <div key={d.id} id={`domain-${d.id}`}>
@@ -342,7 +427,7 @@ export default function ProductRoute() {
                   defaultOpen={dIdx === 0}
                   right={
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                      <Badge tone={st.criticalCount > 0 ? "warn" : "neutral"}>Kritisch: {st.criticalCount}</Badge>
+                      {st.koViolationsCount > 0 ? <Badge tone="warn">KO-Verstöße: {st.koViolationsCount}</Badge> : null}
                       <Badge tone="neutral">
                         {st.sum} / {st.max}
                       </Badge>
@@ -350,7 +435,6 @@ export default function ProductRoute() {
                     </div>
                   }
                 >
-                  {/* Domain “Panel” styling */}
                   <div
                     style={{
                       border: "1px solid var(--border)",
@@ -367,7 +451,7 @@ export default function ProductRoute() {
 
                       <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
                         {d.criteria.map((c: any) => {
-                          const cStat = calcStatForSubcriteria(c.subcriteria);
+                          const cStat = calcStatForSubcriteria(d.name, c.name, c.subcriteria);
                           const subVisibleCount = cStat.visibleCount;
 
                           return (
@@ -378,29 +462,51 @@ export default function ProductRoute() {
                               defaultOpen={false}
                               right={
                                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                                  <Badge tone={cStat.criticalCount > 0 ? "warn" : "neutral"}>Kritisch: {cStat.criticalCount}</Badge>
+                                  {cStat.koViolationsCount > 0 ? <Badge tone="warn">KO: {cStat.koViolationsCount}</Badge> : null}
                                   <Badge tone="neutral">
                                     {cStat.sum} / {cStat.max}
                                   </Badge>
-                                  <Badge tone={subVisibleCount === 0 ? "warn" : "neutral"}>{subVisibleCount} Unterkriterien</Badge>
+                                  <Badge tone={subVisibleCount === 0 ? "warn" : "neutral"}>
+                                    {subVisibleCount} Unterkriterien
+                                  </Badge>
                                 </div>
                               }
                             >
-                              {/* Criterion progress */}
                               <div style={{ marginTop: 8 }}>
                                 <HeatBar value={cStat.sum} max={cStat.max} />
                               </div>
 
                               <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
                                 {c.subcriteria.map((sc: any) => {
-                                  const scScore = scoreMap.get(sc.id);
+                                  const scId = sc.id as string;
+                                  const scName = sc.name as string;
+                                  const scDesc = getShortDesc(sc);
+
+                                  if (
+                                    !isVisibleSub({
+                                      domainName: d.name,
+                                      criterionName: c.name,
+                                      subId: scId,
+                                      subName: scName,
+                                      subDesc: scDesc,
+                                    })
+                                  ) {
+                                    return null;
+                                  }
+
+                                  const scScore = scoreMap.get(scId);
                                   const score = ((scScore?.score ?? 0) as 0 | 1 | 2) ?? 0;
 
-                                  const pref = prefMap.get(sc.id);
-                                  const relevance = pref?.relevance_level ?? "kann";
+                                  const pref = prefMap.get(scId);
+                                  const koThr = (pref?.ko_threshold ?? 2) as 1 | 2;
+                                  const isKoViolation = koViolationSet.has(scId);
 
-                                  if (onlyRelevant && relevance === "nicht_relevant") return null;
-                                  if (onlyCritical && score !== 0) return null;
+                                  const thrLabel = koThr === 2 ? "Streng (min. Stark)" : "Flexibel (min. Ausreichend)";
+
+                                  // minimal: highlight ONLY for KO-Verstoß
+                                  const border = isKoViolation ? "2px solid rgba(220, 38, 38, 0.35)" : "1px solid var(--border)";
+                                  const bg = isKoViolation ? "rgba(220, 38, 38, 0.04)" : "var(--surface)";
+                                  const strip = isKoViolation ? "hsl(0 85% 45%)" : th.accent;
 
                                   const evid = (scScore as any)?.evidenz_links ?? (scScore as any)?.evidence_links ?? [];
                                   const evidCount = Array.isArray(evid) ? evid.length : 0;
@@ -408,38 +514,50 @@ export default function ProductRoute() {
 
                                   return (
                                     <div
-                                      key={sc.id}
+                                      key={scId}
                                       style={{
-                                        border: "1px solid var(--border)",
+                                        border,
                                         borderRadius: "var(--r-md)",
                                         padding: "var(--s-4)",
-                                        background: "var(--surface)",
+                                        background: bg,
                                         position: "relative",
                                         overflow: "hidden",
                                       }}
                                     >
-                                      {/* subtle domain accent strip */}
-                                      <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 4, background: th.accent, opacity: 0.9 }} />
+                                      <div
+                                        style={{
+                                          position: "absolute",
+                                          left: 0,
+                                          top: 0,
+                                          bottom: 0,
+                                          width: 4,
+                                          background: strip,
+                                          opacity: 0.95,
+                                        }}
+                                      />
 
                                       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
                                         <div style={{ minWidth: 0, paddingLeft: 6 }}>
-                                          <div style={{ fontWeight: 900 }}>{sc.name}</div>
+                                          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                                            <div style={{ fontWeight: 900 }}>{scName}</div>
+                                            {isKoViolation ? <Badge tone="warn">KO-Verstoß</Badge> : null}
+                                          </div>
 
-                                          {getShortDesc(sc) ? (
-                                            <div style={{ marginTop: 6, color: "var(--text-muted)", fontSize: 13 }}>
-                                              {getShortDesc(sc)}
-                                            </div>
+                                          {scDesc ? (
+                                            <div style={{ marginTop: 6, color: "var(--text-muted)", fontSize: 13 }}>{scDesc}</div>
                                           ) : null}
 
-                                          <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                                            <Badge tone="neutral">{relevance}</Badge>
-                                          </div>
+                                          {/* minimal: show KO details ONLY on violation */}
+                                          {isKoViolation ? (
+                                            <div style={{ marginTop: 8, color: "var(--text-muted)", fontSize: 13 }}>
+                                              Mindestscore: <strong>{thrLabel}</strong>
+                                            </div>
+                                          ) : null}
                                         </div>
 
                                         <ScorePill score={score} />
                                       </div>
 
-                                      {/* “Warum” bleibt, aber wirkt weniger noisy */}
                                       <details style={{ marginTop: "var(--s-3)" }}>
                                         <summary style={{ cursor: "pointer", color: "var(--accent)", fontWeight: 800 }}>
                                           Warum dieser Score?
@@ -447,20 +565,14 @@ export default function ProductRoute() {
 
                                         <div style={{ marginTop: "var(--s-3)", display: "grid", gap: 12 }}>
                                           <div style={{ color: "var(--text)", fontSize: 14, lineHeight: 1.55 }}>
-                                            {comment ? (
-                                              comment
-                                            ) : (
-                                              <span style={{ color: "var(--text-muted)" }}>Kein Audit-Kommentar hinterlegt.</span>
-                                            )}
+                                            {comment ? comment : <span style={{ color: "var(--text-muted)" }}>Kein Audit-Kommentar hinterlegt.</span>}
                                           </div>
 
                                           <div>
                                             <div style={{ fontWeight: 900, fontSize: 13 }}>Evidenz</div>
                                             <div style={{ marginTop: 6, display: "grid", gap: 6 }}>
                                               {evidCount === 0 ? (
-                                                <div style={{ color: "var(--text-muted)", fontSize: 13 }}>
-                                                  Keine Evidenz-Links hinterlegt.
-                                                </div>
+                                                <div style={{ color: "var(--text-muted)", fontSize: 13 }}>Keine Evidenz-Links hinterlegt.</div>
                                               ) : (
                                                 evid.map((l: any, i: number) => (
                                                   <div key={i} style={{ fontSize: 13 }}>

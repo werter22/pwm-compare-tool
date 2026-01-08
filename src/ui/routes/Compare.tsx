@@ -24,19 +24,9 @@ function isDifferent(values: Array<0 | 1 | 2>) {
 }
 
 /** Kleine, ruhige Progressbar (für Kriterien-Übersicht) */
-function MiniProgress({
-  valuePct,
-  label,
-}: {
-  valuePct: number;
-  label?: string;
-}) {
+function MiniProgress({ valuePct, label }: { valuePct: number; label?: string }) {
   const v = Math.max(0, Math.min(100, valuePct));
-
-  // Heat-Meter: 0% = rot (0°), 100% = grün (120°)
   const hue = (v / 100) * 120;
-
-  // Etwas "app-tauglicher": nicht zu neon, gute Lesbarkeit
   const fill = `hsl(${hue} 70% 42%)`;
 
   return (
@@ -63,9 +53,7 @@ function MiniProgress({
       </div>
 
       {label ? (
-        <div style={{ fontSize: 12, fontWeight: 800, color: "var(--text-muted)" }}>
-          {label}
-        </div>
+        <div style={{ fontSize: 12, fontWeight: 800, color: "var(--text-muted)" }}>{label}</div>
       ) : null}
     </div>
   );
@@ -118,6 +106,33 @@ export default function Compare() {
   }, [scores, compareIds]);
 
   const prefMap = useMemo(() => new Map(prefs.map((p) => [p.subcriterion_id, p])), [prefs]);
+
+  // --- KO-VERSTÖSSE: pro Produkt ein Set von Subcriterion-IDs, die KO verletzen (score < threshold)
+  const koViolationByProduct = useMemo(() => {
+    const m = new Map<string, Set<string>>();
+    for (const p of compareProducts) m.set(p.id, new Set<string>());
+
+    for (const pref of prefs) {
+      if (!pref?.is_ko) continue;
+      const subId = pref.subcriterion_id;
+      const thr = ((pref.ko_threshold ?? 2) as 1 | 2) ?? 2;
+
+      for (const p of compareProducts) {
+        const scScore = scoreByProductAndSub.get(p.id)?.get(subId);
+        const score = ((scScore?.score ?? 0) as 0 | 1 | 2) ?? 0;
+        if (score < thr) m.get(p.id)?.add(subId);
+      }
+    }
+
+    return m;
+  }, [prefs, compareProducts, scoreByProductAndSub]);
+
+  const isKoViolation = (productId: string, subId: string) => koViolationByProduct.get(productId)?.has(subId) ?? false;
+
+  // Styles (dezent, wie Product-Detail)
+  const KO_VIOLATION_BORDER = "2px solid rgba(220, 38, 38, 0.30)";
+  const KO_VIOLATION_BG = "rgba(220, 38, 38, 0.04)";
+  const KO_VIOLATION_STRIP = "hsl(0 85% 45%)";
 
   const cols = compareProducts.length;
 
@@ -198,7 +213,6 @@ export default function Compare() {
               <Button
                 variant="ghost"
                 onClick={() => {
-                  // Auswahl leeren (localStorage via toggleCompareSelection)
                   compareProducts.forEach((p) => toggleCompareSelection(p.id));
                   setCompareIds([]);
                 }}
@@ -233,14 +247,29 @@ export default function Compare() {
               <div style={{ display: "grid", gridTemplateColumns: gridTemplate }}>
                 {/* Left header cell with controls */}
                 <div style={{ padding: "12px 14px" }}>
-
                   <div style={{ marginTop: 2, display: "grid", gap: 6 }}>
-                    <label style={{ display: "flex", gap: 8, alignItems: "center", color: "var(--text-muted)", fontSize: 13 }}>
+                    <label
+                      style={{
+                        display: "flex",
+                        gap: 8,
+                        alignItems: "center",
+                        color: "var(--text-muted)",
+                        fontSize: 13,
+                      }}
+                    >
                       <input type="checkbox" checked={onlyDiffs} onChange={(e) => setOnlyDiffs(e.target.checked)} />
                       Nur Unterschiede
                     </label>
 
-                    <label style={{ display: "flex", gap: 8, alignItems: "center", color: "var(--text-muted)", fontSize: 13 }}>
+                    <label
+                      style={{
+                        display: "flex",
+                        gap: 8,
+                        alignItems: "center",
+                        color: "var(--text-muted)",
+                        fontSize: 13,
+                      }}
+                    >
                       <input type="checkbox" checked={compact} onChange={(e) => setCompact(e.target.checked)} />
                       Kompakt
                     </label>
@@ -250,7 +279,15 @@ export default function Compare() {
                 {/* Product header cells */}
                 {compareProducts.map((p) => (
                   <div key={p.id} style={{ padding: "12px 14px" }}>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "center", textAlign: "center" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 6,
+                        alignItems: "center",
+                        textAlign: "center",
+                      }}
+                    >
                       <div style={{ fontWeight: 900 }}>{p.name}</div>
 
                       <button
@@ -284,7 +321,7 @@ export default function Compare() {
 
                 return (
                   <div key={d.id}>
-                    {/* Domain row (visuell klarer) */}
+                    {/* Domain row */}
                     <div
                       style={{
                         padding: "10px 14px",
@@ -303,10 +340,8 @@ export default function Compare() {
                     </div>
 
                     {d.criteria.map((c: any) => {
-                      // Wenn onlyDiffs: Kriterium komplett ausblenden, wenn nix differiert
                       if (onlyDiffs && !criterionHasAnyDiff(c)) return null;
 
-                      // Accordion pro Kriterium: default = eingeklappt (kein open-Attribut)
                       return (
                         <details
                           key={c.id}
@@ -315,7 +350,6 @@ export default function Compare() {
                             background: "white",
                           }}
                         >
-                          {/* Criterion header row = summary */}
                           <summary
                             style={{
                               listStyle: "none",
@@ -344,22 +378,18 @@ export default function Compare() {
                                 ) : null}
                               </div>
 
-                              {/* Progress per product */}
                               {compareProducts.map((p) => {
                                 const pr = criterionProgress(c, p.id);
                                 return (
                                   <div key={p.id} style={{ padding: "12px 14px" }}>
-                                    <MiniProgress
-                                      valuePct={pr.pct}
-                                      label={`${pr.sum}/${pr.max}`}
-                                    />
+                                    <MiniProgress valuePct={pr.pct} label={`${pr.sum}/${pr.max}`} />
                                   </div>
                                 );
                               })}
                             </div>
                           </summary>
 
-                          {/* Subcriteria rows (dein bestehendes Rendering) */}
+                          {/* Subcriteria rows */}
                           <div>
                             {c.subcriteria.map((sc: any, idx: number) => {
                               const values = compareProducts.map((p) => {
@@ -399,8 +429,6 @@ export default function Compare() {
                                     <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
                                       <Badge tone="neutral">{relevance}</Badge>
                                       {isKO ? <Badge tone="warn">KO ≥ {koTh}</Badge> : null}
-
-                                      {/* Gewicht nur im NICHT-kompakt Mode */}
                                       {!compact && typeof pref?.weight === "number" ? (
                                         <Badge tone="neutral">Gewicht: {pref.weight}</Badge>
                                       ) : null}
@@ -415,54 +443,106 @@ export default function Compare() {
                                     const comment = (scScore?.audit_comment ?? "") as string;
                                     const evid = scScore?.evidenz_links ?? scScore?.evidence_links ?? [];
 
+                                    const violated = isKoViolation(p.id, sc.id);
+
                                     return (
                                       <div key={p.id} style={{ padding: "12px 14px" }}>
-                                        <div style={{ display: "flex", justifyContent: "center" }}>
-                                          <ScorePill score={score} />
-                                        </div>
+                                        {/* KO-Verstoß: dezente Hervorhebung NUR wenn wirklich verletzt */}
+                                        <div
+                                          style={{
+                                            position: "relative",
+                                            borderRadius: "var(--r-md)",
+                                            padding: compact ? "10px 10px" : "10px 10px",
+                                            border: violated ? KO_VIOLATION_BORDER : "1px solid transparent",
+                                            background: violated ? KO_VIOLATION_BG : "transparent",
+                                            overflow: "hidden",
+                                          }}
+                                        >
+                                          {violated ? (
+                                            <div
+                                              style={{
+                                                position: "absolute",
+                                                left: 0,
+                                                top: 0,
+                                                bottom: 0,
+                                                width: 4,
+                                                background: KO_VIOLATION_STRIP,
+                                                opacity: 0.95,
+                                              }}
+                                            />
+                                          ) : null}
 
-                                        {!compact && (
-                                          <div style={{ marginTop: 10, color: "var(--text)", fontSize: 13, lineHeight: 1.45 }}>
-                                            {comment ? (
-                                              (
+                                          <div style={{ display: "flex", justifyContent: "center" }}>
+                                            <ScorePill score={score} />
+                                          </div>
+
+                                          {/* nur im Verstoß-Fall eine klare, kleine Markierung (keine Doppel-"KO") */}
+                                          {violated ? (
+                                            <div style={{ marginTop: 8, display: "flex", justifyContent: "center" }}>
+                                              <Badge tone="warn">KO-Verstoß</Badge>
+                                            </div>
+                                          ) : null}
+
+                                          {!compact && (
+                                            <div
+                                              style={{
+                                                marginTop: 10,
+                                                color: "var(--text)",
+                                                fontSize: 13,
+                                                lineHeight: 1.45,
+                                              }}
+                                            >
+                                              {comment ? (
                                                 <details>
-                                                  <summary style={{ cursor: "pointer", color: "var(--text)", fontWeight: 700, fontSize: 13 }}>
-                                                  {" "}
+                                                  <summary
+                                                    style={{
+                                                      cursor: "pointer",
+                                                      color: "var(--text)",
+                                                      fontWeight: 700,
+                                                      fontSize: 13,
+                                                    }}
+                                                  >
                                                     <span style={{ color: "var(--accent)", fontWeight: 800, fontSize: 12 }}>
                                                       Mehr anzeigen
                                                     </span>
                                                   </summary>
                                                   <div style={{ marginTop: 8 }}>{comment}</div>
                                                 </details>
-                                              )
-                                            ) : (
-                                              <span style={{ color: "var(--text-muted)" }}>Kein Audit-Kommentar.</span>
-                                            )}
-
-                                          </div>
-                                        )}
-
-                                        {!compact && evid?.length > 0 && (
-                                          <details style={{ marginTop: 10 }}>
-                                            <summary style={{ cursor: "pointer", color: "var(--accent)", fontWeight: 800, fontSize: 12 }}>
-                                              Quellen ({evid.length})
-                                            </summary>
-                                            <div style={{ marginTop: 8, display: "grid", gap: 6, fontSize: 12 }}>
-                                              {evid.slice(0, 6).map((l: any, i: number) => (
-                                                <div key={i}>
-                                                  {l?.url ? (
-                                                    <a href={l.url} target="_blank" rel="noreferrer">
-                                                      {l.label || "Quelle"}
-                                                    </a>
-                                                  ) : (
-                                                    <span style={{ color: "var(--text-muted)" }}>{l?.label || "Quelle"}</span>
-                                                  )}
-                                                </div>
-                                              ))}
-                                              {evid.length > 6 ? <div style={{ color: "var(--text-muted)" }}>…</div> : null}
+                                              ) : (
+                                                <span style={{ color: "var(--text-muted)" }}>Kein Audit-Kommentar.</span>
+                                              )}
                                             </div>
-                                          </details>
-                                        )}
+                                          )}
+
+                                          {!compact && evid?.length > 0 && (
+                                            <details style={{ marginTop: 10 }}>
+                                              <summary
+                                                style={{
+                                                  cursor: "pointer",
+                                                  color: "var(--accent)",
+                                                  fontWeight: 800,
+                                                  fontSize: 12,
+                                                }}
+                                              >
+                                                Quellen ({evid.length})
+                                              </summary>
+                                              <div style={{ marginTop: 8, display: "grid", gap: 6, fontSize: 12 }}>
+                                                {evid.slice(0, 6).map((l: any, i: number) => (
+                                                  <div key={i}>
+                                                    {l?.url ? (
+                                                      <a href={l.url} target="_blank" rel="noreferrer">
+                                                        {l.label || "Quelle"}
+                                                      </a>
+                                                    ) : (
+                                                      <span style={{ color: "var(--text-muted)" }}>{l?.label || "Quelle"}</span>
+                                                    )}
+                                                  </div>
+                                                ))}
+                                                {evid.length > 6 ? <div style={{ color: "var(--text-muted)" }}>…</div> : null}
+                                              </div>
+                                            </details>
+                                          )}
+                                        </div>
                                       </div>
                                     );
                                   })}
