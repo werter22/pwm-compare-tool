@@ -1,6 +1,6 @@
 import type { ButtonHTMLAttributes } from "react";
 
-type Variant = "primary" | "secondary" | "ghost";
+type Variant = "primary" | "secondary" | "ghost" | "danger";
 
 export default function Button({
   variant = "primary",
@@ -19,6 +19,11 @@ export default function Button({
     primary: { background: "var(--accent)", color: "white" },
     secondary: { background: "var(--muted)", color: "var(--text)", borderColor: "var(--border)" },
     ghost: { background: "transparent", color: "var(--text)", borderColor: "var(--border)" },
+    danger: {
+      background: "var(--warn-bg)",
+      color: "var(--crit-text)",
+      borderColor: "var(--border)",
+    },
   };
 
   return <button {...props} style={{ ...base, ...styles[variant], ...props.style }} />;

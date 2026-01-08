@@ -144,7 +144,7 @@ function ProductCardRow({
         {/* Links: Details */}
         <div>
           <Link to={`/product/${p.id}`} style={{ textDecoration: "none" }}>
-            <Button>Details</Button>
+            <Button variant="secondary">Details</Button>
           </Link>
         </div>
 

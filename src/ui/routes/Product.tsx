@@ -21,11 +21,6 @@ function getShortDesc(x: any): string | undefined {
   return (x?.short_desc ?? x?.shortDesc ?? undefined) as any;
 }
 
-function formatKoViolation(k: any): string {
-  if (typeof k === "string") return k;
-  return String(k?.label ?? k?.name ?? k?.subcriterion_id ?? k?.subcriterionId ?? "Unbekannt");
-}
-
 function getKoViolationSubId(k: any): string | undefined {
   if (!k) return undefined;
   if (typeof k === "string") return undefined;
@@ -91,8 +86,8 @@ export default function ProductRoute() {
   const [compareIds, setCompareIds] = useState<string[]>(loadCompareSelection());
 
   // streamlined filters: Suche + nur KO-Verstöße
-  const [query, setQuery] = useState("");
-  const [onlyKoViolations, setOnlyKoViolations] = useState(false);
+  const [query] = useState("");
+  const [onlyKoViolations] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -269,11 +264,11 @@ export default function ProductRoute() {
       <div style={{ padding: "var(--s-6) 0" }}>
         <PageHeader
           title={headerTitle as any /* falls PageHeader.title als string typisiert ist */}
-          subtitle="Details nach Domäne → Kriterium → Unterkriterium. Alle Scores sind nachweisbasiert (read-only)."
+          subtitle="[Produkt Beschreibung Placeholder] Details nach Domäne → Kriterium → Unterkriterium. Alle Scores sind nachweisbasiert (read-only)."
           right={
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <Button
-                variant={selectedForCompare ? "primary" : "ghost"}
+                variant={selectedForCompare ? "secondary" : "ghost"}
                 onClick={() => {
                   if (!id) return;
                   const next = toggleCompareSelection(id);
@@ -309,9 +304,9 @@ export default function ProductRoute() {
                 <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                   <Badge tone="neutral">Gesamt: {totalScore} / 100</Badge>
                   {koViolations.length > 0 ? (
-                    <Badge tone="warn">KO-Verstoß: {koViolations.length}</Badge>
+                    <Badge tone="crit">KO-Verstoss: {koViolations.length}</Badge>
                   ) : (
-                    <Badge tone="ok">Kein KO-Verstoß</Badge>
+                    <Badge tone="ok">Kein KO-Verstoss</Badge>
                   )}
                 </div>
               </div>
@@ -388,7 +383,7 @@ export default function ProductRoute() {
                       {/* bottom aligned */}
                       <div style={{ marginTop: "auto" }}>
                         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                          {st.koViolationsCount > 0 ? <Badge tone="warn">KO: {st.koViolationsCount}</Badge> : null}
+                          {st.koViolationsCount > 0 ? <Badge tone="crit">KO: {st.koViolationsCount}</Badge> : null}
                           <Badge tone="neutral">
                             {st.sum} / {st.max}
                           </Badge>
@@ -427,7 +422,7 @@ export default function ProductRoute() {
                   defaultOpen={dIdx === 0}
                   right={
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                      {st.koViolationsCount > 0 ? <Badge tone="warn">KO-Verstöße: {st.koViolationsCount}</Badge> : null}
+                      {st.koViolationsCount > 0 ? <Badge tone="crit">KO-Verstöße: {st.koViolationsCount}</Badge> : null}
                       <Badge tone="neutral">
                         {st.sum} / {st.max}
                       </Badge>
@@ -462,7 +457,7 @@ export default function ProductRoute() {
                               defaultOpen={false}
                               right={
                                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                                  {cStat.koViolationsCount > 0 ? <Badge tone="warn">KO: {cStat.koViolationsCount}</Badge> : null}
+                                  {cStat.koViolationsCount > 0 ? <Badge tone="crit">KO: {cStat.koViolationsCount}</Badge> : null}
                                   <Badge tone="neutral">
                                     {cStat.sum} / {cStat.max}
                                   </Badge>
@@ -503,7 +498,7 @@ export default function ProductRoute() {
 
                                   const thrLabel = koThr === 2 ? "Streng (min. Stark)" : "Flexibel (min. Ausreichend)";
 
-                                  // minimal: highlight ONLY for KO-Verstoß
+                                  // minimal: highlight ONLY for KO-Verstoss
                                   const border = isKoViolation ? "2px solid rgba(220, 38, 38, 0.35)" : "1px solid var(--border)";
                                   const bg = isKoViolation ? "rgba(220, 38, 38, 0.04)" : "var(--surface)";
                                   const strip = isKoViolation ? "hsl(0 85% 45%)" : th.accent;
@@ -540,7 +535,6 @@ export default function ProductRoute() {
                                         <div style={{ minWidth: 0, paddingLeft: 6 }}>
                                           <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                                             <div style={{ fontWeight: 900 }}>{scName}</div>
-                                            {isKoViolation ? <Badge tone="warn">KO-Verstoß</Badge> : null}
                                           </div>
 
                                           {scDesc ? (

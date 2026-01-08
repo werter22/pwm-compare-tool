@@ -4,9 +4,8 @@ const LS_KEY = "pwm_compare_preferences_v1";
 const LS_APPLIED_KEY = "pwm_compare_preferences_applied_v1";
 
 /**
- * OPTION 2 (Source of Truth = weight)
  * - weight ist die Wahrheit (0..10)
- * - relevance_level wird aus weight abgeleitet (2A)
+ * - relevance_level wird aus weight abgeleitet
  * - KO ist harte Constraint: is_ko => weight=10 & relevance_level="muss"
  */
 
@@ -15,8 +14,8 @@ const KO_THRESHOLD_DEFAULT: 1 | 2 = 2;
 // Defaults (wenn user "Relevanz" auswählt, wird weight auf diese Werte gesetzt)
 const DEFAULT_WEIGHT_BY_LEVEL: Record<RelevanceLevel, number> = {
   muss: 10,
-  sollte: 5,
-  kann: 1,
+  sollte: 7,
+  kann: 3,
   nicht_relevant: 0,
 };
 
@@ -43,7 +42,7 @@ function clampInt(n: number, min: number, max: number): number {
  */
 function deriveRelevanceFromWeight(weight: number): RelevanceLevel {
   if (weight <= 0) return "nicht_relevant";
-  if (weight >= 7) return "muss";
+  if (weight >= 8) return "muss";
   if (weight >= 4) return "sollte";
   return "kann";
 }

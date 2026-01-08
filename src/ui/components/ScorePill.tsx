@@ -3,21 +3,15 @@ import type { ScoreValue } from "../../domain/types";
 function labelForScore(s: ScoreValue) {
   if (s === 2) return "Stark";
   if (s === 1) return "Ausreichend";
-  return "Kritisch";
+  return "Schwach";
 }
 
 export default function ScorePill({ score }: { score: ScoreValue }) {
   const label = labelForScore(score);
 
-  const bg =
-    score === 2 ? "#e7f7ea" :
-    score === 1 ? "#fff4d6" :
-    "#ffe5e5";
-
-  const border =
-    score === 2 ? "#7fd18c" :
-    score === 1 ? "#f0c36a" :
-    "#e38a8a";
+  // gleiche Optik wie vorher – nur Farben aus Tokens
+  const bg = score === 2 ? "var(--ok-bg)" : score === 1 ? "var(--warn-bg)" : "var(--crit-bg)";
+  const border = score === 2 ? "var(--ok-border)" : score === 1 ? "var(--warn-border)" : "var(--crit-border)";
 
   return (
     <span
@@ -31,7 +25,8 @@ export default function ScorePill({ score }: { score: ScoreValue }) {
         background: bg,
         border: `1px solid ${border}`,
         fontSize: 12,
-        fontWeight: 600
+        fontWeight: 600,
+        color: "var(--text)",
       }}
     >
       <span style={{ width: 18, textAlign: "center" }}>{score}</span>

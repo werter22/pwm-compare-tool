@@ -24,7 +24,15 @@ function isDifferent(values: Array<0 | 1 | 2>) {
 }
 
 /** Kleine, ruhige Progressbar (für Kriterien-Übersicht) */
-function MiniProgress({ valuePct, label }: { valuePct: number; label?: string }) {
+function MiniProgress({
+  valuePct,
+  label,
+  afterLabel,
+}: {
+  valuePct: number;
+  label?: string;
+  afterLabel?: any; // bewusst minimal, ohne extra React-Typen
+}) {
   const v = Math.max(0, Math.min(100, valuePct));
   const hue = (v / 100) * 120;
   const fill = `hsl(${hue} 70% 42%)`;
@@ -52,12 +60,20 @@ function MiniProgress({ valuePct, label }: { valuePct: number; label?: string })
         />
       </div>
 
-      {label ? (
-        <div style={{ fontSize: 12, fontWeight: 800, color: "var(--text-muted)" }}>{label}</div>
+      {(label || afterLabel) ? (
+        <div style={{ display: "flex", gap: 8, alignItems: "center", justifyContent: "center", flexWrap: "wrap" }}>
+          {label ? (
+            <div style={{ fontSize: 12, fontWeight: 800, color: "var(--text-muted)" }}>
+              {label}
+            </div>
+          ) : null}
+          {afterLabel}
+        </div>
       ) : null}
     </div>
   );
 }
+
 
 type CriterionProgress = { pct: number; sum: number; max: number };
 
@@ -132,7 +148,7 @@ export default function Compare() {
   // Styles (dezent, wie Product-Detail)
   const KO_VIOLATION_BORDER = "2px solid rgba(220, 38, 38, 0.30)";
   const KO_VIOLATION_BG = "rgba(220, 38, 38, 0.04)";
-  const KO_VIOLATION_STRIP = "hsl(0 85% 45%)";
+  const KO_VIOLATION_STRIP = "var(--crit-border)";
 
   const cols = compareProducts.length;
 
@@ -199,6 +215,20 @@ export default function Compare() {
     return false;
   }
 
+  function criterionHasKoViolation(c: any, productId: string) {
+    const subs = c.subcriteria ?? [];
+    for (const sc of subs) {
+      const pref = prefMap.get(sc.id);
+      if (!pref?.is_ko) continue;
+
+      const thr = ((pref.ko_threshold ?? 2) as 1 | 2);
+      const score = (scoreByProductAndSub.get(productId)?.get(sc.id)?.score ?? 0) as 0 | 1 | 2;
+
+      if (score < thr) return true;
+    }
+    return false;
+  }
+
   return (
     <Container>
       <div style={{ padding: "var(--s-6) 0" }}>
@@ -207,17 +237,17 @@ export default function Compare() {
           subtitle="Unterkriterien nebeneinander. „Nur Unterschiede“ hilft, schnell die relevanten Differenzen zu sehen."
           right={
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <Button variant="secondary" onClick={() => nav("/ranking")}>
-                Zurück
-              </Button>
               <Button
-                variant="ghost"
+                variant="danger"
                 onClick={() => {
                   compareProducts.forEach((p) => toggleCompareSelection(p.id));
                   setCompareIds([]);
                 }}
               >
                 Auswahl leeren
+              </Button>
+              <Button variant="primary" onClick={() => nav("/ranking")}>
+                Zurück
               </Button>
             </div>
           }
@@ -380,12 +410,19 @@ export default function Compare() {
 
                               {compareProducts.map((p) => {
                                 const pr = criterionProgress(c, p.id);
+                                const hasKoV = criterionHasKoViolation(c, p.id);
+
                                 return (
                                   <div key={p.id} style={{ padding: "12px 14px" }}>
-                                    <MiniProgress valuePct={pr.pct} label={`${pr.sum}/${pr.max}`} />
+                                    <MiniProgress
+                                      valuePct={pr.pct}
+                                      label={`${pr.sum}/${pr.max}`}
+                                      afterLabel={hasKoV ? <Badge tone="crit">KO-Verstoss</Badge> : null}
+                                    />
                                   </div>
                                 );
                               })}
+
                             </div>
                           </summary>
 
@@ -447,7 +484,7 @@ export default function Compare() {
 
                                     return (
                                       <div key={p.id} style={{ padding: "12px 14px" }}>
-                                        {/* KO-Verstoß: dezente Hervorhebung NUR wenn wirklich verletzt */}
+                                        {/* KO-Verstoss: dezente Hervorhebung NUR wenn wirklich verletzt */}
                                         <div
                                           style={{
                                             position: "relative",
@@ -476,10 +513,10 @@ export default function Compare() {
                                             <ScorePill score={score} />
                                           </div>
 
-                                          {/* nur im Verstoß-Fall eine klare, kleine Markierung (keine Doppel-"KO") */}
+                                          {/* nur im Verstoss-Fall eine klare, kleine Markierung (keine Doppel-"KO") */}
                                           {violated ? (
                                             <div style={{ marginTop: 8, display: "flex", justifyContent: "center" }}>
-                                              <Badge tone="warn">KO-Verstoß</Badge>
+                                              <Badge tone="crit">KO-Verstoss</Badge>
                                             </div>
                                           ) : null}
 

@@ -28,7 +28,7 @@ export default function Home() {
       <div style={{ padding: "var(--s-6) 0" }}>
         <PageHeader
           title="Passwortmanager vergleichen"
-          subtitle="Nachweisbasierte Scores (read-only). Du steuerst Relevanz, Gewichte und KO-Kriterien – und siehst, wie sich das Ranking verändert."
+          subtitle="Nachweisbasierte Scores (read-only). Du steuerst Relevanz, Gewichte und KO-Kriterien um den für dich besten Passwortmanager zu finden."
         />
 
         {/* Primary entry cards */}
@@ -59,7 +59,7 @@ export default function Home() {
                 <div>
                   <strong>Fragebogen</strong>
                   <div style={{ color: "var(--text-muted)", fontSize: 13 }}>
-                    Setzt eine sinnvolle Startgewichtung (optional).
+                    Setzt eine sinnvolle Startgewichtung.
                   </div>
                 </div>
               </div>
@@ -68,7 +68,7 @@ export default function Home() {
                 <div>
                   <strong>Feintuning</strong>
                   <div style={{ color: "var(--text-muted)", fontSize: 13 }}>
-                    Relevanz korrigieren, KO-Kriterien setzen (optional).
+                    Relevanz korrigieren, KO-Kriterien setzen.
                   </div>
                 </div>
               </div>
@@ -77,7 +77,7 @@ export default function Home() {
                 <div>
                   <strong>Zusammenfassung</strong>
                   <div style={{ color: "var(--text-muted)", fontSize: 13 }}>
-                    Alle Unterkriterien als Übersicht + Slider (0–10) (optional).
+                    Alle Unterkriterien als Übersicht + Slider.
                   </div>
                 </div>
               </div>
@@ -145,7 +145,7 @@ export default function Home() {
             <Card style={{ display: "grid", gap: 8 }}>
               <div style={{ fontWeight: 900 }}>KO-Kriterien</div>
               <div style={{ color: "var(--text-muted)", fontSize: 13, lineHeight: 1.5 }}>
-                Definiere harte Muss-Anforderungen – bei Verstoß fliegt ein Produkt aus der Empfehlung.
+                Definiere harte Muss-Anforderungen – bei Verstoss fliegt ein Produkt aus der Empfehlung.
               </div>
             </Card>
 

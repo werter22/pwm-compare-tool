@@ -41,6 +41,19 @@ function isCompleteAnswers(a: Partial<WizardAnswers>): a is WizardAnswers {
   return QUESTIONS.every((q) => a[q.id] != null);
 }
 
+// stabile "Signatur" um Draft vs Applied zu vergleichen (ohne deep-equal libs)
+function prefsSignature(prefs: Preference[]): string {
+  return prefs
+    .slice()
+    .sort((a, b) => a.subcriterion_id.localeCompare(b.subcriterion_id))
+    .map((p) => {
+      const thr = (p.ko_threshold ?? KO_THRESHOLD_DEFAULT) as 1 | 2;
+      const ko = p.is_ko ? 1 : 0;
+      return `${p.subcriterion_id}:${p.relevance_level}:${ko}:${thr}:${p.weight}`;
+    })
+    .join("|");
+}
+
 function railState(prefs: Preference[], ids: string[]) {
   const set = new Set(ids);
   const items = prefs.filter((p) => set.has(p.subcriterion_id));
@@ -169,9 +182,9 @@ function FeintuningStep(props: {
   rails: RailConfigItem[];
   draftPrefs: Preference[];
   setDraftPrefs: (next: Preference[]) => void;
-  setDirty: (v: boolean) => void;
+  markDraft: () => void;
 }) {
-  const { rails, draftPrefs, setDraftPrefs, setDirty } = props;
+  const { rails, draftPrefs, setDraftPrefs, markDraft } = props;
 
   const [query, setQuery] = useState("");
   const normalizedQuery = query.trim().toLowerCase();
@@ -185,7 +198,7 @@ function FeintuningStep(props: {
   }, [rails, normalizedQuery]);
 
   const KO_HELP =
-    "KO = hartes Muss. Wenn der Score unter dem Mindestscore liegt, gilt das Produkt als KO-Verstoß (Ausschluss).";
+    "KO = hartes Muss. Wenn der Score unter dem Mindestscore liegt, gilt das Produkt als KO-Verstoss (Ausschluss).";
   const THRESH_HELP = 'Streng = Mindestscore 2 ("Stark"). Flexibel = Mindestscore 1 ("Ausreichend").';
 
   const pillSelectStyle: React.CSSProperties = {
@@ -209,7 +222,7 @@ function FeintuningStep(props: {
       <Card>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
           <div style={{ display: "grid", gap: 6 }}>
-            <strong>Feintuning & KO (optional)</strong>
+            <strong>Feintuning & KO</strong>
             <div style={{ color: "var(--text-muted)", fontSize: 13 }}>
               Änderungen sind Vorschau und wirken erst nach <strong>„Einstellungen übernehmen“</strong>.
             </div>
@@ -310,7 +323,6 @@ function FeintuningStep(props: {
                     maxWidth: 520,
                   }}
                 >
-                  {/* Relevanz (setzt weight defaults; weight bleibt die Wahrheit) */}
                   <label
                     style={{
                       display: "flex",
@@ -330,7 +342,7 @@ function FeintuningStep(props: {
                         const level = e.target.value as RelevanceLevel;
                         const next = setRelevanceMany(draftPrefs, r.subcriterion_ids, level);
                         setDraftPrefs(next);
-                        setDirty(true);
+                        markDraft();
                       }}
                       style={relevanceLocked ? pillSelectStyleDisabled : pillSelectStyle}
                     >
@@ -341,7 +353,6 @@ function FeintuningStep(props: {
                     </select>
                   </label>
 
-                  {/* KO (hart: fixiert weight=10) */}
                   <label
                     style={{
                       display: "flex",
@@ -362,7 +373,7 @@ function FeintuningStep(props: {
                         onChange={(e) => {
                           const next = setKOMany(draftPrefs, r.subcriterion_ids, e.target.checked);
                           setDraftPrefs(next);
-                          setDirty(true);
+                          markDraft();
                         }}
                       />
                       <span
@@ -385,7 +396,6 @@ function FeintuningStep(props: {
                     </div>
                   </label>
 
-                  {/* Mindestscore */}
                   <label
                     style={{
                       display: "flex",
@@ -406,7 +416,7 @@ function FeintuningStep(props: {
                         const t = (Number(e.target.value) as 1 | 2) || KO_THRESHOLD_DEFAULT;
                         const next = setKOThresholdMany(draftPrefs, r.subcriterion_ids, t);
                         setDraftPrefs(next);
-                        setDirty(true);
+                        markDraft();
                       }}
                       style={thresholdEnabled ? pillSelectStyle : pillSelectStyleDisabled}
                     >
@@ -444,12 +454,12 @@ function AdvancedSummaryStep(props: {
   tree: Tree;
   draftPrefs: Preference[];
   setDraftPrefs: (next: Preference[]) => void;
-  setDirty: (v: boolean) => void;
+  markDraft: () => void;
 
   baseline: Preference[];
   resetAllToBaseline: () => void;
 }) {
-  const { tree, draftPrefs, setDraftPrefs, setDirty, baseline, resetAllToBaseline } = props;
+  const { tree, draftPrefs, setDraftPrefs, markDraft, baseline, resetAllToBaseline } = props;
 
   const [query, setQuery] = useState("");
   const [onlyKO, setOnlyKO] = useState(false);
@@ -504,12 +514,6 @@ function AdvancedSummaryStep(props: {
     return hay.includes(normalizedQuery);
   };
 
-  function setWeightLocal(subId: string, w: number) {
-    const next = setWeight(draftPrefs, subId, w);
-    setDraftPrefs(next);
-    setDirty(true);
-  }
-
   const domains = useMemo(() => {
     const byDomain = new Map<
       string,
@@ -560,7 +564,7 @@ function AdvancedSummaryStep(props: {
     <div style={{ display: "grid", gap: 12 }}>
       <Card>
         <div style={{ display: "grid", gap: 6 }}>
-          <strong>Zusammenfassung & Gewichte (optional)</strong>
+          <strong>Zusammenfassung & Gewichte</strong>
           <div style={{ color: "var(--text-muted)", fontSize: 13 }}>
             Hier siehst du alles strukturiert nach Domäne. Du kannst Gewichte final per Slider (0–10) anpassen.
           </div>
@@ -599,8 +603,8 @@ function AdvancedSummaryStep(props: {
 
           <div style={{ flex: "1 1 auto" }} />
 
-          <Button variant="secondary" onClick={resetAllToBaseline}>
-            Alles zuruecksetzen
+          <Button variant="danger" onClick={resetAllToBaseline}>
+            Alle Gewichte zurücksetzen
           </Button>
         </div>
       </Card>
@@ -637,7 +641,6 @@ function AdvancedSummaryStep(props: {
                   }}
                 >
                   <div style={{ fontWeight: 950, fontSize: 15 }}>{d.domainName}</div>
-                  <div style={{ color: "var(--text-muted)", fontSize: 12 }}>Gewichte & KO pro Unterkriterium</div>
                 </div>
 
                 <div style={{ padding: 12, display: "grid", gap: 10 }}>
@@ -752,7 +755,9 @@ function AdvancedSummaryStep(props: {
 
                                     <div style={{ marginTop: 6 }}>
                                       Relevanz: <strong>{p.relevance_level}</strong>
-                                      {isKoLocked ? <span title="KO ist aktiv: Gewicht ist fix auf 10."> · Gewicht fix (10)</span> : null}
+                                      {isKoLocked ? (
+                                        <span title="KO ist aktiv: Gewicht ist fix auf 10."> · Gewicht fix (10)</span>
+                                      ) : null}
                                     </div>
                                   </div>
                                 </div>
@@ -778,7 +783,11 @@ function AdvancedSummaryStep(props: {
                                       step={1}
                                       value={p.weight}
                                       disabled={isKoLocked}
-                                      onChange={(e) => setWeightLocal(s.subId, Number(e.target.value))}
+                                      onChange={(e) => {
+                                        const next = setWeight(draftPrefs, s.subId, Number(e.target.value));
+                                        setDraftPrefs(next);
+                                        markDraft();
+                                      }}
                                       title={isKoLocked ? "KO ist aktiv: Gewicht ist fix auf 10." : "Gewicht 0–10 anpassen"}
                                       style={{
                                         width: 260,
@@ -810,12 +819,12 @@ export default function Wizard() {
 
   const [tree, setTree] = useState<Tree | null>(null);
 
-  // Base = aktueller Stand (applied oder vanilla). Wird NICHT automatisch gespeichert.
+  // Applied (Source of Truth für Ranking/Compare/Product)
   const [prefs, setPrefs] = useState<Preference[]>([]);
 
-  // Draft = Arbeit im Wizard (Preview). Commit nur via "Einstellungen übernehmen".
+  // Draft (nur im Wizard)
   const [draftPrefs, setDraftPrefs] = useState<Preference[]>([]);
-  const [dirty, setDirty] = useState(false);
+  const [isDraft, setIsDraft] = useState(false);
 
   const [showTopFab, setShowTopFab] = useState(false);
   const [justApplied, setJustApplied] = useState(false);
@@ -826,7 +835,7 @@ export default function Wizard() {
   const [stage, setStage] = useState<Stage>("questions");
   const [stepIdx, setStepIdx] = useState(0);
 
-  // Baseline für Summary-Auto-Reset = Snapshot beim Eintritt in Summary
+  // Baseline für Summary-Reset = Snapshot beim Eintritt in Summary
   const [summaryBaseline, setSummaryBaseline] = useState<Preference[] | null>(null);
 
   useEffect(() => {
@@ -839,7 +848,7 @@ export default function Wizard() {
 
       setPrefs(ensured);
       setDraftPrefs(ensured);
-      setDirty(false);
+      setIsDraft(false);
     }
     load().catch(console.error);
   }, []);
@@ -871,7 +880,6 @@ export default function Wizard() {
     if (!tree) return null;
     if (!complete) return { next: prefs, summary: [] as string[] };
 
-    // mapping kann weiterhin weights/relevanz setzen – save/normalize passiert zentral in preferences.ts
     return applyWizardAnswers({
       tree,
       preferences: prefs,
@@ -880,13 +888,37 @@ export default function Wizard() {
     });
   }, [tree, prefs, answers, rails, complete]);
 
+  const hasChanges = useMemo(() => {
+    return prefsSignature(prefs) !== prefsSignature(draftPrefs);
+  }, [prefs, draftPrefs]);
+
+  function markDraft() {
+    if (!isDraft) setIsDraft(true);
+  }
+
+  function discardDraft() {
+    setDraftPrefs(prefs);
+    setIsDraft(false);
+    setSummaryBaseline(null);
+  }
+
+  function confirmDiscardIfNeeded(): boolean {
+    if (!hasChanges) return true;
+    return window.confirm("Du hast ungespeicherte Änderungen. Änderungen verwerfen?");
+  }
+
   function resetAll() {
+    if (hasChanges) {
+      const ok = window.confirm("Alles zurücksetzen? (Das löscht auch gespeicherte Einstellungen.)");
+      if (!ok) return;
+    }
+
     setAnswers({});
     setStepIdx(0);
     setStage("questions");
     setSummaryBaseline(null);
 
-    setDirty(false);
+    setIsDraft(false);
 
     clearPreferences();
     const neutral = tree ? ensurePreferencesForTree(tree, []) : [];
@@ -895,25 +927,39 @@ export default function Wizard() {
   }
 
   function continueWithDefaults() {
-    const ok = window.confirm(
-      "Ohne Wizard fortfahren?\n\nDu nutzt Standardwerte (alle Gewichte gleich). Du kannst später jederzeit anpassen."
-    );
+    const msg = hasChanges
+      ? "Ohne Wizard fortfahren?\n\nDu hast ungespeicherte Änderungen – diese würden verworfen."
+      : "Ohne Wizard fortfahren?\n\nDu nutzt Standardwerte (oder bereits gespeicherte). Du kannst später jederzeit anpassen.";
+
+    const ok = window.confirm(msg);
     if (!ok) return;
+
+    if (hasChanges) discardDraft();
     nav("/ranking");
   }
 
   function skipQuestionnaire() {
+    // optional: keine Drafts erzeugen – direkt in Feintuning mit aktuellem Stand
+    if (!confirmDiscardIfNeeded()) return;
+    discardDraft();
     setStage("feintuning");
-    setDraftPrefs(prefs);
-    setDirty(false);
     setSummaryBaseline(null);
   }
 
   function applyDraft() {
-    savePreferences(draftPrefs); // speichert automatisch normalisiert
+    if (!tree) return;
+
+    savePreferences(draftPrefs); // normalisiert beim Speichern (via preferences.ts)
     localStorage.setItem("wizard_completed", "true");
-    setPrefs(draftPrefs);
-    setDirty(false);
+
+    // direkt wieder aus storage ziehen -> applied == wirklich gespeicherter Stand
+    const stored = loadPreferences();
+    const ensured = ensurePreferencesForTree(tree, stored);
+
+    setPrefs(ensured);
+    setDraftPrefs(ensured);
+    setIsDraft(false);
+
     setJustApplied(true);
     window.setTimeout(() => setJustApplied(false), 1800);
   }
@@ -924,14 +970,25 @@ export default function Wizard() {
       return;
     }
 
+    if (target === stage) return;
+
+    // wenn Draft-Änderungen existieren und ein Wechsel potentiell verwirrt: warnen
+    // (wir halten es minimal: warnen nur, wenn wirklich Änderungen existieren)
+    if (hasChanges) {
+      const ok = window.confirm("Du hast ungespeicherte Änderungen. Trotzdem wechseln?");
+      if (!ok) return;
+    }
+
     if (target === "questions") {
+      setSummaryBaseline(null);
       setStage("questions");
       return;
     }
 
     if (target === "feintuning") {
+      // Feintuning startet aus Questionnaire-Preview (wenn komplett) – sonst aus applied
       setDraftPrefs(wizardPreview.next);
-      setDirty((wizardPreview.summary ?? []).length > 0);
+      setIsDraft(false);
       setSummaryBaseline(null);
       setStage("feintuning");
       return;
@@ -940,7 +997,53 @@ export default function Wizard() {
     // target === "summary"
     setSummaryBaseline(draftPrefs.map((p) => ({ ...p })));
     setStage("summary");
-    setDirty(true);
+  }
+
+  function goBack() {
+    if (stage === "questions") {
+      setStepIdx((i) => Math.max(0, i - 1));
+      return;
+    }
+
+    if (stage === "feintuning") {
+      if (!confirmDiscardIfNeeded()) return;
+      setStage("questions");
+      setSummaryBaseline(null);
+      return;
+    }
+
+    // summary -> feintuning
+    if (!confirmDiscardIfNeeded()) return;
+    setStage("feintuning");
+    setSummaryBaseline(null);
+  }
+
+  function goNext() {
+    if (stage === "questions") {
+      if (stepIdx < QUESTIONS.length - 1) {
+        setStepIdx((i) => i + 1);
+      } else {
+        goStage("feintuning");
+      }
+      return;
+    }
+
+    if (stage === "feintuning") {
+      goStage("summary");
+      return;
+    }
+  }
+
+  function resetFeintuningToQuestionnaireBaseline() {
+    const baseline = wizardPreview?.next ?? prefs;
+    setDraftPrefs(baseline);
+    markDraft();
+  }
+
+  function resetSummaryToBaseline() {
+    if (!summaryBaseline) return;
+    setDraftPrefs(summaryBaseline.map((p) => ({ ...p })));
+    markDraft();
   }
 
   if (!tree) {
@@ -958,39 +1061,85 @@ export default function Wizard() {
 
   const disabledTabs: Partial<Record<Stage, boolean>> = {};
 
-  const rightActions = (
-    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
-      {stage === "questions" ? (
+  // konsistente Header-Bar (statt stage-spezifischer “Footer”-Navigation)
+  const headerBar = (
+    <div
+      style={{
+        marginTop: "var(--s-4)",
+        display: "flex",
+        justifyContent: "space-between",
+        gap: 10,
+        flexWrap: "wrap",
+        alignItems: "center",
+      }}
+    >
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         <Button
-          variant="secondary"
-          onClick={skipQuestionnaire}
-          title="Fragebogen überspringen und mit Feintuning fortfahren"
+          variant="primary"
+          onClick={goBack}
+          disabled={stage === "questions" && stepIdx === 0}
+          title={stage === "questions" ? "Zur vorherigen Frage" : "Zurück"}
         >
-          Fragebogen ueberspringen
+          Zurück
         </Button>
-      ) : null}
 
-      <Button variant="ghost" onClick={continueWithDefaults} title="Standardwerte verwenden (ohne Wizard)">
-        Ohne Wizard fortfahren
-      </Button>
+        {stage === "questions" ? (
+          <Button
+            variant="ghost"
+            onClick={skipQuestionnaire}
+            title="Fragebogen überspringen und mit Feintuning fortfahren"
+          >
+            Überspringen
+          </Button>
+        ) : null}
 
-      <Button variant="ghost" onClick={resetAll}>
-        Zuruecksetzen
-      </Button>
+        {stage === "feintuning" ? (
+          <Button variant="danger" onClick={resetFeintuningToQuestionnaireBaseline} title="Nur Feintuning zurücksetzen">
+            Feintuning zurücksetzen
+          </Button>
+        ) : null}
+      </div>
+
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+        {hasChanges ? (
+          <>
+            <Button variant="ghost" onClick={discardDraft} title="Änderungen verwerfen">
+              Verwerfen
+            </Button>
+            <Button onClick={applyDraft} title="Einstellungen speichern">
+              Einstellungen übernehmen
+            </Button>
+          </>
+        ) : null}
+
+        {stage !== "summary" ? (
+          <Button onClick={goNext}>
+            {stage === "questions"
+              ? stepIdx < QUESTIONS.length - 1
+                ? "Weiter"
+                : "Weiter: Feintuning"
+              : "Weiter: Zusammenfassung"}
+          </Button>
+        ) : <Button onClick={() => nav("/ranking")}>Zum Ranking</Button>}
+      </div>
     </div>
   );
 
-  function resetFeintuningToQuestionnaireBaseline() {
-    const baseline = wizardPreview?.next ?? prefs;
-    setDraftPrefs(baseline);
-    setDirty((wizardPreview?.summary ?? []).length > 0);
-  }
+  const rightActions = (
+    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end", alignItems: "center" }}>
+      {justApplied ? <Badge tone="neutral">Gespeichert</Badge> : null}
+      {isDraft && !hasChanges ? <Badge tone="neutral">Vorschau</Badge> : null}
+      {hasChanges ? <Badge tone="neutral">Ungespeichert</Badge> : null}
 
-  function resetSummaryToBaseline() {
-    if (!summaryBaseline) return;
-    setDraftPrefs(summaryBaseline.map((p) => ({ ...p })));
-    setDirty(true);
-  }
+      <Button variant="ghost" onClick={continueWithDefaults} title="Zum Ranking (ohne Wizard)">
+        Ohne Wizard fortfahren
+      </Button>
+
+      <Button variant="danger" onClick={resetAll}>
+        Wizard Zurücksetzen
+      </Button>
+    </div>
+  );
 
   return (
     <Container>
@@ -999,50 +1148,24 @@ export default function Wizard() {
           title="Wizard"
           subtitle={
             stage === "questions"
-              ? "Schritt 1 (optional): Fragen beantworten für eine Startgewichtung."
+              ? "Schritt 1: Fragen beantworten für eine Startgewichtung."
               : stage === "feintuning"
-              ? "Schritt 2 (optional): Feintuning & KO."
-              : "Schritt 3 (optional): Zusammenfassung & finale Gewichte (Slider 0–10)."
+                ? "Schritt 2: Feintuning & KO."
+                : "Schritt 3: Zusammenfassung & finale Gewichte."
           }
-          right={
-            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" }}>
-              {justApplied ? <Badge tone="neutral">Gespeichert</Badge> : null}
-              {rightActions}
-            </div>
-          }
+          right={rightActions}
         />
 
         <WizardTabs
           active={stage}
           onGo={(s) => {
-            if (s === stage) return;
-
-            if (stage === "questions" && (s === "feintuning" || s === "summary")) {
-              goStage("feintuning");
-              if (s === "summary") setTimeout(() => goStage("summary"), 0);
-              return;
-            }
-
-            if (stage === "feintuning" && s === "summary") {
-              goStage("summary");
-              return;
-            }
-
-            if (stage === "summary" && s === "feintuning") {
-              setSummaryBaseline(null);
-              setStage("feintuning");
-              return;
-            }
-            if (stage === "summary" && s === "questions") {
-              setSummaryBaseline(null);
-              setStage("questions");
-              return;
-            }
-
+            // Tabs sind Navigation -> sauberer Stage Switch
             goStage(s);
           }}
           disabled={disabledTabs}
         />
+
+        {headerBar}
 
         {/* QUESTIONS */}
         {stage === "questions" ? (
@@ -1066,38 +1189,14 @@ export default function Wizard() {
                         title={opt.label}
                         description={opt.helper}
                         selected={selected}
-                        onClick={() => setAnswers((a) => ({ ...a, [step.id]: opt.value as never }))}
+                        onClick={() => {
+                          setAnswers((a) => ({ ...a, [step.id]: opt.value as never }));
+                          // Fragebogen ist “Draft im Wizard”, aber erst Apply schreibt wirklich
+                          markDraft();
+                        }}
                       />
                     );
                   })}
-                </div>
-
-                <div
-                  style={{
-                    marginTop: "var(--s-4)",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    gap: 8,
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <Button
-                    variant="secondary"
-                    onClick={() => setStepIdx((i) => Math.max(0, i - 1))}
-                    disabled={stepIdx === 0}
-                  >
-                    Zurueck
-                  </Button>
-
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    {stepIdx < QUESTIONS.length - 1 ? (
-                      <Button onClick={() => setStepIdx((i) => i + 1)}>Weiter</Button>
-                    ) : (
-                      <Button onClick={() => goStage("feintuning")} title="Weiter zu Feintuning (optional)">
-                        Weiter: Feintuning
-                      </Button>
-                    )}
-                  </div>
                 </div>
               </div>
             </Card>
@@ -1107,80 +1206,30 @@ export default function Wizard() {
         {/* FEINTUNING */}
         {stage === "feintuning" ? (
           <div style={{ marginTop: "var(--s-5)" }}>
-            <Card>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  gap: 8,
-                  flexWrap: "wrap",
-                  marginBottom: "var(--s-4)",
-                }}
-              >
-                <Button variant="secondary" onClick={() => setStage("questions")}>
-                  Zurueck
-                </Button>
-
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <Button
-                    variant="secondary"
-                    onClick={resetFeintuningToQuestionnaireBaseline}
-                    title="Nur Feintuning zurücksetzen"
-                  >
-                    Feintuning zuruecksetzen
-                  </Button>
-
-                  <Button variant="ghost" onClick={applyDraft} title="Speichert die Einstellungen (bleibt im Wizard)">
-                    Einstellungen uebernehmen
-                  </Button>
-
-                  <Button onClick={() => goStage("summary")}>Weiter: Zusammenfassung</Button>
-                </div>
-              </div>
-
-              <FeintuningStep rails={rails} draftPrefs={draftPrefs} setDraftPrefs={setDraftPrefs} setDirty={setDirty} />
-            </Card>
+            <FeintuningStep
+              rails={rails}
+              draftPrefs={draftPrefs}
+              setDraftPrefs={setDraftPrefs}
+              markDraft={markDraft}
+            />
           </div>
         ) : null}
 
         {/* SUMMARY */}
         {stage === "summary" ? (
           <div style={{ marginTop: "var(--s-5)" }}>
-            <Card>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  gap: 8,
-                  flexWrap: "wrap",
-                  marginBottom: "var(--s-4)",
-                }}
-              >
-                <Button variant="secondary" onClick={() => setStage("feintuning")}>
-                  Zurueck
-                </Button>
+            <AdvancedSummaryStep
+              tree={tree}
+              draftPrefs={draftPrefs}
+              setDraftPrefs={setDraftPrefs}
+              markDraft={markDraft}
+              baseline={summaryBaseline ?? draftPrefs.map((p) => ({ ...p }))}
+              resetAllToBaseline={resetSummaryToBaseline}
+            />
 
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <Button variant="secondary" onClick={resetSummaryToBaseline} disabled={!summaryBaseline}>
-                    Zusammenfassung zuruecksetzen
-                  </Button>
-                  <Button onClick={applyDraft}>Einstellungen uebernehmen</Button>
-                </div>
-              </div>
-
-              <AdvancedSummaryStep
-                tree={tree}
-                draftPrefs={draftPrefs}
-                setDraftPrefs={setDraftPrefs}
-                setDirty={setDirty}
-                baseline={summaryBaseline ?? draftPrefs.map((p) => ({ ...p }))}
-                resetAllToBaseline={resetSummaryToBaseline}
-              />
-            </Card>
-
-            {dirty ? (
+            {hasChanges ? (
               <div style={{ marginTop: "var(--s-3)", color: "var(--text-muted)", fontSize: 13 }}>
-                Hinweis: Du bist in der Vorschau. Erst mit <strong>„Einstellungen uebernehmen“</strong> wird gespeichert.
+                Hinweis: Du bist in der Vorschau. Erst mit <strong>„Einstellungen übernehmen“</strong> wird gespeichert.
               </div>
             ) : null}
           </div>
